@@ -1,0 +1,9 @@
+.mdbook-alerts {
+    border-radius: 4px;
+}
+
+.mdbook-alerts .mdbook-alerts-icon {
+    margin-top: 0.1em;
+    width: 1.25em;
+    height: 1.25em;
+}
