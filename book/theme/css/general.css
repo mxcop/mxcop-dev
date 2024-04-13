@@ -16,7 +16,6 @@ html {
     -webkit-text-size-adjust: none;
 }
 
-
 body {
     margin: 0;
     font-size: 1.6rem;
@@ -24,6 +23,21 @@ body {
 }
 
 code {
+    font-family: var(--mono-font) !important;
+    font-size: var(--code-font-size);
+    direction: ltr !important;
+}
+
+.mono {
+    font-family: var(--mono-font) !important;
+    font-size: var(--code-font-size);
+}
+
+.large-txt {
+    font-size: 1.4rem;
+}
+
+pre.code-block {
     font-family: var(--mono-font) !important;
     font-size: var(--code-font-size);
     direction: ltr !important;
@@ -43,9 +57,15 @@ main {
     font-size: var(--katex-font-size) !important;
 }
 
+.fig {
+    background-color: var(--fig-w10);
+    padding: 2rem;
+    border-radius: 6px;
+}
+
 /* page header */
 .page-head {
-    transform: rotateZ(-3deg);
+    /* transform: rotateZ(-3deg); */
     margin-bottom: 4rem;
 }
 
@@ -56,7 +76,19 @@ main {
     font-size: 1.35rem;
 }
 
-.page-head h1 {
+.page-head div {
+    display: flex;
+}
+
+.page-head div img {
+    image-rendering: pixelated;
+    width: 4rem;
+    height: 4rem;
+    margin-right: 0.25rem;
+    margin-top: 0.65rem;
+}
+
+.page-head div h1 {
     margin: 0;
     font-size: 3.5rem;
 }
@@ -68,8 +100,27 @@ main {
     font-size: 1.35rem;
 }
 
+.h-group {
+    display: flex;
+}
+
+figure {
+    margin: 1rem;
+}
+
+sup {
+    font-style: italic;
+    color: #aaa;
+}
+
 .yellow {
     color: #f3a23f;
+}
+.green {
+    color: var(--fig-success);
+}
+.red {
+    color: var(--fig-error);
 }
 
 /* Don't change font size in headers. */

@@ -6,12 +6,12 @@
     --sidebar-resize-indicator-width: 8px;
     --sidebar-resize-indicator-space: 2px;
     --page-padding: 15px;
-    --content-max-width: 750px;
+    --content-max-width: 1280px;
     --menu-bar-height: 50px;
-    --font: "Rokkitt", sans-serif;
-    --mono-font: "Source Code Pro", Consolas, "Ubuntu Mono", Menlo, "DejaVu Sans Mono", monospace, monospace;
-    --code-font-size: 0.875em; /* please adjust the ace font size accordingly in editor.js */
-    --font-size: 2.0rem;
+    --font: "Open Sans", sans-serif;
+    --mono-font: "JetBrains Mono", Consolas, "Ubuntu Mono", Menlo, "DejaVu Sans Mono", monospace, monospace;
+    --code-font-size: 0.9em; /* please adjust the ace font size accordingly in editor.js */
+    --font-size: 1.8rem;
     --katex-font-size: 1.9rem;
 }
 
@@ -21,6 +21,16 @@
     --bg: #131414;
     --mg: #d5d5d5;
     --fg: #eeeeee;
+
+    --fig-y90: #f3c53f;
+    --fig-y50: #f3a23f66;
+    --fig-w20: #2b2b2b;
+    --fig-w10: #191919;
+    
+    --fig-success: #3ff352;
+    --fig-success-50: #327a39;
+    --fig-error: #f33f3f;
+    --fig-error-50: #7b3333;
 
     --sidebar-bg: #191919;
     --sidebar-border: 2px solid #ffffff22;

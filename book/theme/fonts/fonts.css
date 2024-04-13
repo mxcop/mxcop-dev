@@ -110,3 +110,15 @@
     src: local('Monocraft'), local('Monocraft'),
          url('monocraft.otf') format('otf');
 }
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: local('JetBrainsMono'), local('JetBrainsMono'),
+        url('jetbrains-mono.ttf') format('ttf');
+}
+
+@font-face {
+    font-family: 'OpenSans';
+    src: local('OpenSans'), local('OpenSans'),
+        url('opensans.ttf') format('ttf');
+}

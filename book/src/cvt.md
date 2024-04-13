@@ -1,208 +1,128 @@
 <div class="page-head">
     <i>13/04/2024 ~ #ray-tracing ~ #voxels ~ #optimization</i>
-    <h1>Coherent Voxel Traversal</h1>
-    <p>Defeating the <span class="yellow">memory bottleneck</span></p>
+    <div>
+        <img src="../assets/images/ram-stick.png" title="RAM Stick">
+        <h1>Coherent Voxel Traversal</h1>
+    </div>
+    <p>Surpassing the <span class="yellow">memory bottleneck</span></p>
 </div>
 
-Hello, world!
+## The problem
 
-<figure>
-  <svg class="fig-scale" width="550" viewBox="-80 0 550 400">
-    <g visibility="hidden">
-      <foreignObject x="160" y="185" width="80" height="25">
-        $ x \gt x_{min} $
-      </foreignObject>
-      <set id="reset" attributeName="visibility" to="hidden" begin="0s; edges.end" dur="4s" />
-      <set id="xmin" attributeName="visibility" to="visible" begin="reset.end" dur="2s" />
-      <set attributeName="visibility" to="hidden" begin="xmin.end" end="edges.begin" />
-      <set id="edges" attributeName="visibility" to="hidden" begin="ymax.end" dur="4s" />
-    </g>
-    <g visibility="hidden">
-      <foreignObject x="160" y="185" width="80" height="25">
-        $ x \lt x_{max} $
-      </foreignObject>
-      <set id="xmax" attributeName="visibility" to="visible" begin="xmin.end" dur="2s" />
-      <set attributeName="visibility" to="hidden" begin="xmax.end" end="xmax.begin" />
-    </g>
-    <g visibility="hidden">
-      <foreignObject x="160" y="185" width="80" height="25">
-        $ y \gt y_{min} $
-      </foreignObject>
-      <set id="ymin" attributeName="visibility" to="visible" begin="xmax.end" dur="2s" />
-      <set attributeName="visibility" to="hidden" begin="ymin.end" end="ymin.begin" />
-    </g>
-    <g visibility="hidden">
-      <foreignObject x="160" y="185" width="80" height="25">
-        $ y \lt y_{max} $
-      </foreignObject>
-      <set id="ymax" attributeName="visibility" to="visible" begin="ymin.end" dur="2s" />
-      <set attributeName="visibility" to="hidden" begin="ymax.end" end="ymax.begin" />
-    </g>
-    <pattern id="hatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
-        <line x1="0" y1="0" x2="0" y2="8" stroke="var(--icons)" stroke-width="1" />
-      </pattern>
-    <rect x="-80" y="0" width="550" height="400" fill="url(#hatch)">
-      <animate attributeName="x" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="width" to="390" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="width" to="240" begin="xmax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y" to="80" begin="ymin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="height" to="320" begin="ymin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="height" to="240" begin="ymax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y" to="0" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="width" to="550" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="height" to="400" begin="reset.begin" dur="1s" fill="freeze" />
-    </rect>
-    <line x1="-81" y1="0" x2="-81" y2="400" stroke="var(--fg)">
-      <animate attributeName="x1" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y1" to="80" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="320" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-81" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="0" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="-81" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="400" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="471" y1="0" x2="471" y2="400" stroke="var(--fg)">
-      <animate attributeName="x1" to="320" begin="xmax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="320" begin="xmax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y1" to="80" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="320" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="471" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="0" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="471" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="400" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="-80" y1="-1" x2="470" y2="-1" stroke="var(--fg)">
-      <animate attributeName="y1" to="80" begin="ymin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="80" begin="ymin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="80" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="320" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="-1" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="470" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="-1" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="-80" y1="401" x2="470" y2="401" stroke="var(--fg)">
-      <animate attributeName="y1" to="320" begin="ymax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="320" begin="ymax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="80" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="320" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="401" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="470" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="401" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-  </svg>
-</figure>
+During my journey ray tracing voxels on the CPU, the first thing that became apparent to me was;<br>
+all my traversal algorithms were bottlenecked by poor cache utilization.
 
+Traversing grids is not great for our caches, for we cannot assure a <span class="yellow">linear access pattern</span>.
+
+For example, we often store our voxels in a 2D/3D array in memory.<br>
+The resulting layout would look something like *Figure A*.
+<div>
+<div class="h-group">
 <figure>
-  <svg class="fig-scale" width="550" viewBox="-80 0 550 400">
-    <line x1="-81" y1="0" x2="-81" y2="400" stroke="var(--fg)">
-      <animate attributeName="x1" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y1" to="80" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="320" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-81" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="0" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="-81" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="400" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="471" y1="0" x2="471" y2="400" stroke="var(--fg)">
-      <animate attributeName="x1" to="320" begin="xmax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="320" begin="xmax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y1" to="80" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="320" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="471" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="0" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="471" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="400" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="-80" y1="-1" x2="470" y2="-1" stroke="var(--fg)">
-      <animate attributeName="y1" to="80" begin="ymin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="80" begin="ymin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="80" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="320" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="-1" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="470" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="-1" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="-80" y1="401" x2="470" y2="401" stroke="var(--fg)">
-      <animate attributeName="y1" to="320" begin="ymax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="320" begin="ymax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="80" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="320" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="401" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="470" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="401" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="-80" y1="200" x2="120" y2="0" stroke="var(--icons)" stroke-dasharray="1" />
-    <line x1="-80" y1="200" x2="120" y2="0" stroke="var(--fg)" stroke-width="2">
-      <animate attributeName="x1" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y1" to="40" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="40" begin="ymin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="80" begin="ymin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="stroke" to="red" begin="ymin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="200" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="120" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="0" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="stroke" to="var(--fg)" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="-80" y1="200" x2="386.666666" y2="0" stroke="var(--icons)" stroke-dasharray="1" />
-    <line x1="-80" y1="200" x2="386.666666" y2="0" stroke="var(--fg)" stroke-width="2">
-      <animate attributeName="x1" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y1" to="131.428571" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="320" begin="xmax.begin+0.277777s" dur="0.222222s" fill="freeze" />
-      <animate attributeName="y2" to="28.571428" begin="xmax.begin+0.277777s" dur="0.222222s" fill="freeze" />
-      <animate attributeName="x2" to="200" begin="ymin.begin+0.17857142s" dur="0.32142857s" fill="freeze" />
-      <animate attributeName="y2" to="80" begin="ymin.begin+0.17857142s" dur="0.32142857s" fill="freeze" />
-      <animate attributeName="stroke" to="green" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="200" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="386.666666" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="0" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="stroke" to="var(--fg)" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="-80" y1="200" x2="470" y2="200" stroke="var(--icons)" stroke-dasharray="1" />
-    <line x1="-80" y1="200" x2="470" y2="200" stroke="var(--fg)" stroke-width="2">
-      <animate attributeName="x1" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="320" begin="xmax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="stroke" to="green" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="470" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="stroke" to="var(--fg)" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="-80" y1="200" x2="386.666666" y2="400" stroke="var(--icons)" stroke-dasharray="1" />
-    <line x1="-80" y1="200" x2="386.666666" y2="400" stroke="var(--fg)" stroke-width="2">
-      <animate attributeName="x1" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y1" to="268.571428" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="320" begin="xmax.begin+0.277777s" dur="0.222222s" fill="freeze" />
-      <animate attributeName="y2" to="371.428571" begin="xmax.begin+0.277777s" dur="0.222222s" fill="freeze" />
-      <animate attributeName="x2" to="200" begin="ymax.begin+0.17857142s" dur="0.32142857s" fill="freeze" />
-      <animate attributeName="y2" to="320" begin="ymax.begin+0.17857142s" dur="0.32142857s" fill="freeze" />
-      <animate attributeName="stroke" to="green" begin="edges.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="200" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="386.666666" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="400" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="stroke" to="var(--fg)" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <line x1="-80" y1="200" x2="120" y2="400" stroke="var(--icons)" stroke-dasharray="1" />
-    <line x1="-80" y1="200" x2="120" y2="400" stroke="var(--fg)" stroke-width="2">
-      <animate attributeName="x1" to="80" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y1" to="360" begin="xmin.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x2" to="40" begin="ymax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="y2" to="320" begin="ymax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="stroke" to="red" begin="ymax.begin" dur="0.5s" fill="freeze" />
-      <animate attributeName="x1" to="-80" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y1" to="200" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="x2" to="120" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="y2" to="400" begin="reset.begin" dur="1s" fill="freeze" />
-      <animate attributeName="stroke" to="var(--fg)" begin="reset.begin" dur="1s" fill="freeze" />
-    </line>
-    <rect x="80" y="80" width="240" height="240" stroke="var(--fg)" fill="url(#hatch)" />
-  </svg>
+    <svg class="fig" width="256" viewBox="0 0 258 258">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
+        <g>
+            <defs>
+                <marker id="arrow" viewBox="0 -5 10 10" refX="5" refY="0" markerWidth="4" markerHeight="4" orient="auto">
+                    <path stroke="var(--fig-y90)" fill="var(--fig-y90)" d="M0,-5L10,0L0,5" />
+                </marker>
+            </defs>
+            <line x1="241" y1="17" x2="17" y2="49" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="49" x2="17" y2="81" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="81" x2="17" y2="113" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="113" x2="17" y2="145" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="145" x2="17" y2="177" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="177" x2="17" y2="209" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="209" x2="17" y2="241" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="17" y1="17" x2="241" y2="17" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="49" x2="241" y2="49" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="81" x2="241" y2="81" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="113" x2="241" y2="113" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="145" x2="241" y2="145" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="177" x2="241" y2="177" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="209" x2="241" y2="209" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="241" x2="241" y2="241" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+        </g>
+    </svg>
 </figure>
+<figure>
+    <svg class="fig" width="256" viewBox="0 0 258 258">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
+        <g opacity="0">
+            <defs>
+                <marker id="arrow-success" viewBox="0 0 24 24" refX="16" refY="12" markerWidth="11" markerHeight="11" orient="auto">
+                    <path fill="var(--fig-success)" d="m 16,13 -5.5,5.5 1.42,1.42 L 19.84,12 11.92,4.08 10.5,5.5 16,11 Z"/>
+                </marker>
+            </defs>
+            <rect x="1" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="33" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="65" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="97" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="161" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="193" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="225" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="0" y1="109" x2="254" y2="117" stroke="var(--fig-success)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-success)" />
+            <animate id="goodRayEntry" attributeName="opacity" to="5" begin="0;badRayExit.end" dur="5.0s" fill="freeze" />
+            <animate id="goodRayExit" attributeName="opacity" to="0" begin="goodRayEntry.end" dur="5.0s" fill="freeze" />
+        </g>
+        <g opacity="0">
+            <defs>
+                <marker id="arrow-error" viewBox="0 0 24 24" refX="16" refY="12" markerWidth="11" markerHeight="11" orient="auto">
+                    <path fill="var(--fig-error)" d="m 16,13 -5.5,5.5 1.42,1.42 L 19.84,12 11.92,4.08 10.5,5.5 16,11 Z"/>
+                </marker>
+            </defs>
+            <rect x="65" y="1" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="65" y="33" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="97" y="33" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="97" y="65" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="97" y="97" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="97" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="129" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="161" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="193" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="161" y="193" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="161" y="225" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="74" y1="0" x2="184" y2="254" stroke="var(--fig-error)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-error)" />
+            <animate id="badRayEntry" attributeName="opacity" to="5" begin="goodRayExit.end" dur="5.0s" fill="freeze" />
+            <animate id="badRayExit" attributeName="opacity" to="0" begin="badRayEntry.end" dur="5.0s" fill="freeze" />
+        </g>
+    </svg>
+</figure>
+</div>
+<sup>Figure A, and B.</sup>
+</div>
+
+*Figure B* shows two rays, **green** with a good access pattern, and **red** with a terrible one.<br>
+The **red** ray has to jump all over the 2D/3D array in memory, causing many cache misses.
+
+
+## Space filling curves
+
+One of my first attempts to fix this issue was using Morton/Z ordering.
+
+<div>
+<figure>
+    <svg class="fig" width="256" viewBox="0 0 258 258">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
+        <svg width="256" viewBox="21 298 220 220">
+            <polyline fill="none" points="229.333,507.112 201.556,507.112 229.333,479.333   201.556,479.333 173.778,507.112 146,507.112 173.778,479.333 146,479.333 229.333,451.555 201.556,451.555 229.333,423.778   201.556,423.778 173.778,451.555 146,451.555 173.778,423.778 146,423.778 118.223,507.112 90.444,507.112 118.223,479.333   90.444,479.333 62.667,507.112 34.889,507.112 62.667,479.333 34.889,479.333 118.223,451.555 90.444,451.555 118.223,423.778   90.444,423.778 62.667,451.555 34.889,451.555 62.667,423.778 34.889,423.778 229.333,396 201.556,396 229.333,368.223   201.556,368.223 173.778,396 146,396 173.778,368.223 146,368.223 229.333,340.444 201.556,340.444 229.333,312.667   201.556,312.667 173.778,340.444 146,340.444 173.778,312.667 146,312.667 118.223,396 90.444,396 118.223,368.223 90.444,368.223   62.667,396 34.889,396 62.667,368.223 34.889,368.223 118.223,340.444 90.444,340.444 118.223,312.667 90.444,312.667   62.667,340.444 34.889,340.444 62.667,312.667 34.889,312.667  " stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+    </svg>
+</figure>
+<sup>Figure C.</sup>
+</div>
+
+*Figure C* shows a 2D Morton curve in our 8x8 example grid.
