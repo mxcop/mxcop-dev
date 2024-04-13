@@ -64,6 +64,25 @@ main {
     border-radius: 6px;
 }
 
+figure {
+    position: relative;
+}
+
+figure:after {
+    position: absolute;
+    bottom: 0;
+    left: 12px;
+    transform: translateY(50%);
+    content: attr(title);
+    color: #947d67;
+    font-style: italic;
+    font-size: 1.35rem;
+    background-color: var(--bg);
+    padding: 0.2em 0.8em;
+    border-radius: 6px;
+    transition: color 0.1s;
+}
+
 /* page header */
 .page-head {
     /* transform: rotateZ(-3deg); */
@@ -81,17 +100,25 @@ main {
     display: flex;
 }
 
-.page-head div img {
+.page-head h1 img {
     image-rendering: pixelated;
     width: 4rem;
     height: 4rem;
     margin-right: 0.25rem;
-    margin-top: 0.65rem;
 }
 
-.page-head div h1 {
+.page-head h1 {
     margin: 0;
     font-size: 3.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.page-head h1 a {
+    margin: 0;
+    font-size: 3.5rem;
+    display: flex;
+    align-items: center;
 }
 
 .page-head p {
@@ -115,7 +142,7 @@ sup {
 }
 
 .yellow {
-    color: #f3a23f;
+    color: var(--fig-y90);
 }
 .green {
     color: var(--fig-success);
