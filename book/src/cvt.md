@@ -145,17 +145,29 @@ This means cells close to each other in space, are also close to each other in m
 When we place our voxels on such a curve, it is more likely the next voxel will already be in our caches.
 
 <div>
+
 ```cpp
-/* 3D coordinate to morton code. */
-inline u64 morton_encode(const u32 x, const u32 y, const u32 z) {
-    return _pdep_u64((u64)x, BMI_3D_X_MASK) | _pdep_u64((u64)y, BMI_3D_Y_MASK) |
-           _pdep_u64((u64)z, BMI_3D_Z_MASK);
+/* Encode 3D coordinate as a morton code. */
+inline u64 morton_encode(const u64 x, const u64 y, const u64 z) {
+    constexpr u64 BMI_3D_X_MASK = 0x9249249249249249;
+    constexpr u64 BMI_3D_Y_MASK = 0x2492492492492492;
+    constexpr u64 BMI_3D_Z_MASK = 0x4924924924924924;
+
+    return _pdep_u64(x, BMI_3D_X_MASK) | _pdep_u64(y, BMI_3D_Y_MASK) | _pdep_u64(z, BMI_3D_Z_MASK);
+}
+
+/* Encode 2D coordinate as a morton code. */
+inline u64 morton_encode(const u64 x, const u64 y) {
+    constexpr u64 BMI_2D_X_MASK = 0x5555555555555555;
+    constexpr u64 BMI_2D_Y_MASK = 0xAAAAAAAAAAAAAAAA;
+
+    return _pdep_u64(x, BMI_2D_X_MASK) | _pdep_u64(y, BMI_2D_Y_MASK);
 }
 ```
 <sup>Snippet A.</sup>
 </div>
 
-To convert a regular 3D index into a Morton code, we can use the `_pdep_u64` instruction on x86.<br>
+To convert a regular 2D/3D index into a Morton code, we can use the `_pdep_u64` instruction on x86.<br>
 *Snippet A* shows how we can do this in C++.
 
 *Excellent! Problem solved, right?*<br>
