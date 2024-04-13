@@ -1,4 +1,8 @@
-# Chapter 1
+<div class="page-head">
+    <i>13/04/2024 ~ #testing ~ #foo ~ #bar</i>
+    <h1>Chapter 1</h1>
+    <p>The testing <span class="yellow">chapter</span></p>
+</div>
 
 Here is an inline example, $ \pi(\theta) $,
 Look at this cool equation : $ \nabla f(x) \in \mathbb{R}^n, $

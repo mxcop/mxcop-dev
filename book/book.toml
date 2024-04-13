@@ -7,16 +7,25 @@ src = "src"
 [build]
 build-dir = "../docs"
 
+# Theming
 [output.html]
 theme = "theme"
 default-theme = "dark"
 preferred-dark-theme = "earthsong"
 additional-css = ["theme/css/alerts.css"]
 
+[output.html.search]
+enable = false # no need for search
+
+[output.html.print]
+enable = false # no printing
+
+# LaTeX preprocessor
 [preprocessor.katex]
 after = ["links"]
 
 [preprocessor.alerts]
 
+# Syntax highlighting at compile-time
 [preprocessor.syntect]
 custom-theme = "assets/earthsong.tmTheme"
