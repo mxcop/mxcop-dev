@@ -1,12 +1,7 @@
 # Chapter 1
 
 Here is an inline example, $ \pi(\theta) $,
-
-an equation,
-
-$$ \nabla f(x) \in \mathbb{R}^n, $$
-
-and a regular \$ symbol.
+Look at this cool equation : $ \nabla f(x) \in \mathbb{R}^n, $
 
 ```rs
 fn main() {
@@ -18,9 +13,6 @@ fn hello() -> &'static str {
     "Hello world!"
 }
 ```
-
-> [!TIP]
-> Optional information to help a user be more successful.
 
 ```cpp
 class Scene {

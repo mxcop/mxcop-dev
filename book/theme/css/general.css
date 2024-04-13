@@ -39,13 +39,46 @@ main {
     overflow-x: auto;
 }
 
+.katex {
+    font-size: var(--katex-font-size) !important;
+}
+
+/* page header */
+.page-head {
+    transform: rotateZ(-3deg);
+    margin-bottom: 4rem;
+}
+
+.page-head i {
+    margin-bottom: 0;
+    color: #777;
+    font-family: "Monocraft", monospace;
+    font-size: 1.35rem;
+}
+
+.page-head h1 {
+    margin: 0;
+    font-size: 3.5rem;
+}
+
+.page-head p {
+    margin-top: 0;
+    color: #aaa;
+    font-family: "Monocraft", monospace;
+    font-size: 1.35rem;
+}
+
+.yellow {
+    color: #f3a23f;
+}
+
 /* Don't change font size in headers. */
 h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
     font-size: unset;
 }
 
 p {
-    font-size: 2rem;
+    font-size: var(--font-size);
     color: var(--mg);
 }
 

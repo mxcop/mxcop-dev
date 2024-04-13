@@ -104,3 +104,9 @@
     src: local('Rokkitt'), local('Rokkitt'),
          url('rokkitt.woff2') format('woff2');
 }
+
+@font-face {
+    font-family: 'Monocraft';
+    src: local('Monocraft'), local('Monocraft'),
+         url('monocraft.otf') format('otf');
+}

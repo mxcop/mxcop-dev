@@ -10,7 +10,9 @@
     --menu-bar-height: 50px;
     --font: "Rokkitt", sans-serif;
     --mono-font: "Source Code Pro", Consolas, "Ubuntu Mono", Menlo, "DejaVu Sans Mono", monospace, monospace;
-    --code-font-size: 0.875em /* please adjust the ace font size accordingly in editor.js */
+    --code-font-size: 0.875em; /* please adjust the ace font size accordingly in editor.js */
+    --font-size: 2.0rem;
+    --katex-font-size: 1.9rem;
 }
 
 /* Themes */
