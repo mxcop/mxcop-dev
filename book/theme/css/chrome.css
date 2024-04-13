@@ -400,6 +400,7 @@ ul#searchresults span.teaser em {
     overscroll-behavior-y: contain;
     background-color: var(--sidebar-bg);
     color: var(--sidebar-fg);
+    border-right: var(--sidebar-border);
 }
 [dir=rtl] .sidebar { left: unset; right: 0; }
 .sidebar-resizing {

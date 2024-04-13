@@ -9,12 +9,13 @@
 }
 
 html {
-    font-family: "Open Sans", sans-serif;
+    font-family: var(--font);
     color: var(--fg);
     background-color: var(--bg);
     text-size-adjust: none;
     -webkit-text-size-adjust: none;
 }
+
 
 body {
     margin: 0;
@@ -41,6 +42,11 @@ main {
 /* Don't change font size in headers. */
 h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
     font-size: unset;
+}
+
+p {
+    font-size: 2rem;
+    color: var(--mg);
 }
 
 .left { float: left; }

@@ -8,6 +8,7 @@ src = "src"
 build-dir = "../docs"
 
 [output.html]
+theme = "theme"
 default-theme = "dark"
 preferred-dark-theme = "earthsong"
 additional-css = ["theme/css/alerts.css"]
@@ -16,3 +17,6 @@ additional-css = ["theme/css/alerts.css"]
 after = ["links"]
 
 [preprocessor.alerts]
+
+[preprocessor.syntect]
+custom-theme = "assets/earthsong.tmTheme"

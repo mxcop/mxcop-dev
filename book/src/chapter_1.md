@@ -8,7 +8,7 @@ $$ \nabla f(x) \in \mathbb{R}^n, $$
 
 and a regular \$ symbol.
 
-```rust
+```rs
 fn main() {
     println!("{}", hello());
 }
@@ -22,71 +22,24 @@ fn hello() -> &'static str {
 > [!TIP]
 > Optional information to help a user be more successful.
 
-```rs
-use body::MdDoc;
-use head::MdHeader;
-use chrono::Datelike;
-use once_cell::sync::Lazy;
-use std::str::from_utf8;
-use tera::{Context, Tera};
+```cpp
+class Scene {
+  /* Graphic scene data and state */ 
+  GraphicScene graphics;
+  /* Physical scene data and state */ 
+  PhysicalScene physics;
+};
 
-pub mod body;
-pub mod head;
-mod syntect;
+class CrateProp {
+  CrateProp(Scene& scene) {
+    /* "shadow_sprite" is optional, it is used for determining what part of the sprite casts shadows */
+    /* if none is supplied the sprite will cast no shadows */
+    this->sprite = scene.graphics.add_sprite("path/to/sprite", "path/to/shadow_sprite");
+    /*! when the sprite goes out of scope, it is automatically cleaned up */
 
-// Build the template files:
-pub static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
-    let mut tera = Tera::default();
-
-    if let Err(e) = tera.add_raw_template("post", include_str!("../tmpl/post.html")) {
-        println!("Parsing error(s): {}", e);
-        ::std::process::exit(1);
-    };
-
-    tera.autoescape_on(vec![]); // Disable auto escape.
-    tera
-});
-
-pub struct Doc {
-    pub meta: MdHeader,
-    pub content: String,
-}
-
-pub fn render_post(filename: &str, doc: &str) -> Option<Doc> {
-    let Some(doc) = MdDoc::from_file(filename, doc) else {
-        return None;
-    };
-
-    // Setup the post context:
-    let mut context = Context::new();
-    context.insert("title", &doc.meta.title);
-
-    let date = &doc.meta.date;
-    let date_str = format!("{}/{}/{}", date.day(), date.month(), date.year());
-    context.insert("date", &date_str);
-
-    // Get the size + the extra size from the html.
-    let size = doc.content.len() + 1930;
-    context.insert("size", &size);
-
-    context.insert("description", &doc.meta.desc);
-    context.insert("article", &doc.content.trim());
-
-    // Render the post.
-    let content = TEMPLATES.render("post", &context).unwrap();
-    let content = from_utf8(&minify_html::minify(
-        content.as_bytes(),
-        &minify_html::Cfg::default(),
-    ))
-    .expect("failed to minify post").to_string();
-
-    let real_size = &(content.len() as f32 * 0.001);
-    let real_size_str = format!("{:.2} kB", real_size);
-    println!("{}\n- size: {}", filename, real_size_str);
-
-    Some(Doc {
-        meta: doc.meta,
-        content,
-    })
-}
+    /* the rigid body is automatically updated, this is the responsibility of the PhysicalScene */ 
+    this->body = scene.physics.add_rb(/* pos */vec2(0, 1), /* size */vec2(1, 1));
+    /*! when the rigid body goes out of scope, it is automatically cleaned up */
+  }
+};
 ```
