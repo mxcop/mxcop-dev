@@ -25,6 +25,10 @@ a > .hljs {
     overflow-x: clip;
 }
 
+#content {
+    padding-top: 5rem;
+}
+
 /* Menu Bar */
 
 #menu-bar,
@@ -36,10 +40,14 @@ a > .hljs {
     position: relative;
     display: flex;
     flex-wrap: wrap;
-    background-color: var(--bg);
     border-block-end-color: var(--bg);
-    border-block-end-width: 1px;
+    border-block-end-width: 2px;
     border-block-end-style: solid;
+
+    /* border-bottom: 1.5px solid var(--border); */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: hsla(0,0%,7%,.8);
 }
 #menu-bar.sticky,
 .js #menu-bar-hover-placeholder:hover + #menu-bar,
@@ -109,6 +117,12 @@ a > .hljs {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+.menu-title img {
+    height: 3rem;
+    margin-bottom: -0.5rem;
+    margin-right: 0.5rem;
+    image-rendering: pixelated;
 }
 .js .menu-title {
     cursor: pointer;

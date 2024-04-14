@@ -161,7 +161,10 @@
                         {{/if}}
                     </div>
 
-                    <h1 class="menu-title gradient-text">{{ book_title }}</h1>
+                    <h1 class="menu-title gradient-text">
+                        <img src="{{ path_to_root }}favicon.png">
+                        {{ book_title }}
+                    </h1>
 
                     <div class="right-buttons">
                         {{#if print_enable}}
