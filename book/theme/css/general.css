@@ -26,6 +26,9 @@ code {
     font-family: var(--mono-font) !important;
     font-size: var(--code-font-size);
     direction: ltr !important;
+    padding: 0.4rem 0.5rem;
+    background-color: #222;
+    border-radius: 6px;
 }
 
 .mono {

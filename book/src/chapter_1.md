@@ -1,6 +1,6 @@
 <div class="page-head">
     <i>13/04/2024 ~ #testing ~ #foo ~ #bar</i>
-    <h1>Chapter 1</h1>
+    <h1><img src="../assets/images/gameboy.png" title="GameBoy"> Test Chapter</h1>
     <p>The testing <span class="yellow">chapter</span></p>
 </div>
 
