@@ -210,14 +210,15 @@ window.onunload = function () { };
         }, { passive: true });
     })();
     (function controllBorder() {
-        function updateBorder() {
-            if (menu.offsetTop === 0) {
-                menu.classList.remove('bordered');
-            } else {
-                menu.classList.add('bordered');
-            }
-        }
-        updateBorder();
-        document.addEventListener('scroll', updateBorder, { passive: true });
+        // function updateBorder() {
+        //     if (menu.offsetTop === 0) {
+        //         menu.classList.remove('bordered');
+        //     } else {
+        //         menu.classList.add('bordered');
+        //     }
+        // }
+        // updateBorder();
+        // document.addEventListener('scroll', updateBorder, { passive: true });
+        menu.classList.add('bordered');
     })();
 })();
