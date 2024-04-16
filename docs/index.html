@@ -1,0 +1,511 @@
+<!DOCTYPE HTML>
+<html lang="en" class="dark" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Chapter 1: DDA Memory Bottleneck - MΛX&#x27;s Archive</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/css/alerts.css">
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "earthsong" : "dark";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('dark')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Faster Voxel / Grid Traversal</li><li class="chapter-item expanded "><a href="dda-memory.html" class="active"><strong aria-hidden="true">1.</strong> Chapter 1: DDA Memory Bottleneck</a></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">2.</strong> Chapter 2: Multi-resolution DDA</a></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">3.</strong> Chapter 3: Coherent Grid Traversal</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                    </div>
+
+                    <h1 class="menu-title gradient-text">
+                        <img src="favicon.png">
+                        MΛX&#x27;s Archive
+                    </h1>
+
+                    <div class="right-buttons">
+
+                    </div>
+                </div>
+
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<style>
+pre.code-block {
+    padding: 2rem;
+    overflow: auto;
+    border-radius: 6px;
+}
+
+</style>
+<style>
+.mdbook-alerts {
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  border-left: 0.25em solid var(--mdbook-alerts-color);
+}
+
+.mdbook-alerts > *:first-child {
+  margin-top: 0;
+}
+
+.mdbook-alerts > *:last-child {
+  margin-bottom: 0;
+}
+
+.mdbook-alerts-title {
+  display: flex;
+  font-weight: 600;
+  align-items: center;
+  line-height: 1;
+  color: var(--mdbook-alerts-color);
+  text-transform: capitalize;
+}
+
+.mdbook-alerts-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.2em;
+  background-color: currentColor;
+  -webkit-mask: no-repeat center / 100%;
+  mask: no-repeat center / 100%;
+  -webkit-mask-image: var(--mdbook-alerts-icon);
+  mask-image: var(--mdbook-alerts-icon);
+}
+
+.mdbook-alerts-note {
+  --mdbook-alerts-color: rgb(9, 105, 218);
+  /* https://icon-sets.iconify.design/material-symbols/info-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M12 17q.425 0 .713-.288T13 16v-4q0-.425-.288-.712T12 11q-.425 0-.712.288T11 12v4q0 .425.288.713T12 17m0-8q.425 0 .713-.288T13 8q0-.425-.288-.712T12 7q-.425 0-.712.288T11 8q0 .425.288.713T12 9m0 13q-2.075 0-3.9-.788t-3.175-2.137q-1.35-1.35-2.137-3.175T2 12q0-2.075.788-3.9t2.137-3.175q1.35-1.35 3.175-2.137T12 2q2.075 0 3.9.788t3.175 2.137q1.35 1.35 2.138 3.175T22 12q0 2.075-.788 3.9t-2.137 3.175q-1.35 1.35-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12q0-3.35-2.325-5.675T12 4Q8.65 4 6.325 6.325T4 12q0 3.35 2.325 5.675T12 20m0-8"%2F%3E%3C%2Fsvg%3E');
+}
+
+.mdbook-alerts-tip {
+  --mdbook-alerts-color: rgb(26, 127, 55);
+  /* https://icon-sets.iconify.design/material-symbols/lightbulb-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M12 22q-.825 0-1.412-.587T10 20h4q0 .825-.587 1.413T12 22m-3-3q-.425 0-.712-.288T8 18q0-.425.288-.712T9 17h6q.425 0 .713.288T16 18q0 .425-.288.713T15 19zm-.75-3q-1.725-1.025-2.738-2.75T4.5 9.5q0-3.125 2.188-5.312T12 2q3.125 0 5.313 2.188T19.5 9.5q0 2.025-1.012 3.75T15.75 16zm.6-2h6.3q1.125-.8 1.738-1.975T17.5 9.5q0-2.3-1.6-3.9T12 4Q9.7 4 8.1 5.6T6.5 9.5q0 1.35.613 2.525T8.85 14M12 14"%2F%3E%3C%2Fsvg%3E');
+}
+
+.mdbook-alerts-important {
+  --mdbook-alerts-color: rgb(130, 80, 223);
+  /* https://icon-sets.iconify.design/material-symbols/chat-info-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M12 7q.425 0 .713-.288T13 6q0-.425-.288-.712T12 5q-.425 0-.712.288T11 6q0 .425.288.713T12 7m0 8q.425 0 .713-.288T13 14v-4q0-.425-.288-.712T12 9q-.425 0-.712.288T11 10v4q0 .425.288.713T12 15m-6 3l-2.3 2.3q-.475.475-1.088.213T2 19.575V4q0-.825.588-1.412T4 2h16q.825 0 1.413.588T22 4v12q0 .825-.587 1.413T20 18zm-.85-2H20V4H4v13.125zM4 16V4z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.mdbook-alerts-warning {
+  --mdbook-alerts-color: rgb(154, 103, 0);
+  /* https://icon-sets.iconify.design/material-symbols/warning-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M2.725 21q-.275 0-.5-.137t-.35-.363q-.125-.225-.137-.488t.137-.512l9.25-16q.15-.25.388-.375T12 3q.25 0 .488.125t.387.375l9.25 16q.15.25.138.513t-.138.487q-.125.225-.35.363t-.5.137zm1.725-2h15.1L12 6zM12 18q.425 0 .713-.288T13 17q0-.425-.288-.712T12 16q-.425 0-.712.288T11 17q0 .425.288.713T12 18m0-3q.425 0 .713-.288T13 14v-3q0-.425-.288-.712T12 10q-.425 0-.712.288T11 11v3q0 .425.288.713T12 15m0-2.5"%2F%3E%3C%2Fsvg%3E');
+}
+
+.mdbook-alerts-caution {
+  --mdbook-alerts-color: rgb(207, 34, 46);
+  /* https://icon-sets.iconify.design/material-symbols/brightness-alert-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M12 17q.425 0 .713-.288T13 16q0-.425-.288-.712T12 15q-.425 0-.712.288T11 16q0 .425.288.713T12 17m0-4q.425 0 .713-.288T13 12V8q0-.425-.288-.712T12 7q-.425 0-.712.288T11 8v4q0 .425.288.713T12 13m-3.35 7H6q-.825 0-1.412-.587T4 18v-2.65L2.075 13.4q-.275-.3-.425-.662T1.5 12q0-.375.15-.737t.425-.663L4 8.65V6q0-.825.588-1.412T6 4h2.65l1.95-1.925q.3-.275.663-.425T12 1.5q.375 0 .738.15t.662.425L15.35 4H18q.825 0 1.413.588T20 6v2.65l1.925 1.95q.275.3.425.663t.15.737q0 .375-.15.738t-.425.662L20 15.35V18q0 .825-.587 1.413T18 20h-2.65l-1.95 1.925q-.3.275-.662.425T12 22.5q-.375 0-.737-.15t-.663-.425zm.85-2l2.5 2.5l2.5-2.5H18v-3.5l2.5-2.5L18 9.5V6h-3.5L12 3.5L9.5 6H6v3.5L3.5 12L6 14.5V18zm2.5-6"%2F%3E%3C%2Fsvg%3E');
+}
+
+</style>
+<div class="page-head">
+    <i>13/04/2024 ~ #ray-tracing ~ #voxels ~ #optimization</i>
+    <h1 id="dda-memory-bottleneck"><a class="header" href="#dda-memory-bottleneck"><img src="../assets/images/ram-stick.png" title="RAM Stick"> DDA Memory Bottleneck</a></h1>
+    <p>Improving spatial locality to increase DDA <span class="yellow">performance</span></p>
+</div>
+<h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>In this series of articles we're going to be diving into grid / voxel traversal and how to make it faster!<br>
+The algorithm we're talking about is <a href="https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing"><em>Amanatides and Woo "A Fast Voxel Traversal Algorithm for Ray Tracing"</em></a></p>
+<p>We will not go into great detail here as to how it exactly works.<br>
+<a href="https://github.com/cgyurgyik/fast-voxel-traversal-algorithm/blob/master/overview/FastVoxelTraversalOverview.md">This page</a> has a good overview of the algorithm and how it works.<br>
+Sometimes we may refer to the traversal algorithm(s) as "DDA" <em>Digital Differential Analyzer</em>.</p>
+<p><em>The basic idea is</em>, we calculate the distance to the next cell boundary for each axis called <code>tmax</code>.<br>
+The smallest axis of <code>tmax</code> is the axis we step on next.</p>
+<figure title="Figure A: Visualization of tmax.">
+    <svg class="fig" width="256" viewBox="0 0 130 130">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="130" height="130" fill="url(#grid)" />
+        <g>
+            <line x1="36" y1="0" x2="82" y2="128" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" stroke-dasharray="6" />
+            <rect x="33" y="65" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <foreignObject x="36" y="67" width="60" height="25" color="var(--fig-error-50)">
+                <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span><span class="mord mathnormal">os</span></span></span></span>
+            </foreignObject>
+        </g>
+        <g opacity="0">
+            <foreignObject x="6" y="64" width="60" height="25" color="var(--fig-y90)">
+                <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7651em;vertical-align:-0.15em;"></span><span class="mord mathnormal">t</span><span class="mord mathnormal">ma</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">x</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>
+            </foreignObject>
+            <line x1="59" y1="64" x2="65" y2="80" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
+            <line x1="65" y1="70" x2="65" y2="86" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
+            <animate id="tmaxXEntry" attributeName="opacity" to="3" begin="0;tmaxYExit.end" dur="3.0s" fill="freeze" />
+            <animate id="tmaxXExit" attributeName="opacity" to="0" begin="tmaxXEntry.end" dur="3.0s" fill="freeze" />
+        </g>
+        <g opacity="0">
+            <foreignObject x="72" y="68" width="60" height="25" color="var(--fig-y90)">
+                <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9012em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">t</span><span class="mord mathnormal">ma</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>
+            </foreignObject>
+            <line x1="59" y1="64" x2="70.5" y2="96" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
+            <line x1="66.5" y1="97" x2="74.5" y2="97" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
+            <animate id="tmaxYEntry" attributeName="opacity" to="3" begin="tmaxXExit.end" dur="3.0s" fill="freeze" />
+            <animate id="tmaxYExit" attributeName="opacity" to="0" begin="tmaxYEntry.end" dur="3.0s" fill="freeze" />
+        </g>
+        <g>
+            <line x1="36" y1="0" x2="58" y2="62" stroke="var(--fig-error)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-error)" />
+        </g>
+    </svg>
+</figure>
+<p>As we can see in <em>Figure A</em>, with <code>pos</code> as the current cell;<br>
+the next step should indeed be on the axis where <code>tmax</code> is the smallest.<br>
+Then we update <code>tmax</code> by adding the reciprocal ray direction to the smallest axis.<br>
+Moving our <code>pos</code> is done by adding the ray direction sign to the smallest axis.</p>
+<p>Anyway, let's dive in!</p>
+<h2 id="the-problem"><a class="header" href="#the-problem">The problem</a></h2>
+<p>During my journey ray tracing voxels on the CPU, the first thing that became apparent to me was;<br>
+all my traversal algorithms were bottlenecked by poor cache utilization.</p>
+<p>Traversing grids is not great for our caches, often causing many many <span class="yellow">cache misses</span>.</p>
+<p>For example, we often store our grids in a 2D/3D array in memory.<br>
+The resulting layout would look something like <em>Figure B</em>.</p>
+<div class="h-group">
+<figure title="Figure B: Typical grid order in memory.">
+    <svg class="fig" width="256" viewBox="0 0 258 258">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
+        <g>
+            <defs>
+                <marker id="arrow" viewBox="0 -5 10 10" refX="5" refY="0" markerWidth="4" markerHeight="4" orient="auto">
+                    <path stroke="var(--fig-y90)" fill="var(--fig-y90)" d="M0,-5L10,0L0,5" />
+                </marker>
+            </defs>
+            <line x1="241" y1="17" x2="17" y2="49" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="49" x2="17" y2="81" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="81" x2="17" y2="113" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="113" x2="17" y2="145" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="145" x2="17" y2="177" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="177" x2="17" y2="209" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="241" y1="209" x2="17" y2="241" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
+            <line x1="17" y1="17" x2="241" y2="17" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="49" x2="241" y2="49" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="81" x2="241" y2="81" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="113" x2="241" y2="113" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="145" x2="241" y2="145" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="177" x2="241" y2="177" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="209" x2="241" y2="209" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+            <line x1="17" y1="241" x2="241" y2="241" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
+        </g>
+    </svg>
+</figure>
+<figure title="Figure C: The good and the horrible...">
+    <svg class="fig" width="256" viewBox="0 0 258 258">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
+        <g opacity="0">
+            <defs>
+                <marker id="arrow-success" viewBox="0 -5 10 10" refX="5" refY="0" markerWidth="4" markerHeight="4" orient="auto">
+                    <path stroke="var(--fig-success)" fill="var(--fig-success)" d="M0,-5L10,0L0,5" />
+                </marker>
+            </defs>
+            <rect x="1" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="33" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="65" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="97" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="161" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="193" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="225" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="0" y1="109" x2="254" y2="117" stroke="var(--fig-success)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-success)" />
+            <animate id="goodRayEntry" attributeName="opacity" to="5" begin="0;badRayExit.end" dur="5.0s" fill="freeze" />
+            <animate id="goodRayExit" attributeName="opacity" to="0" begin="goodRayEntry.end" dur="5.0s" fill="freeze" />
+        </g>
+        <g opacity="0">
+            <defs>
+                <marker id="arrow-error" viewBox="0 -5 10 10" refX="5" refY="0" markerWidth="4" markerHeight="4" orient="auto">
+                    <path stroke="var(--fig-error)" fill="var(--fig-error)" d="M0,-5L10,0L0,5" />
+                </marker>
+            </defs>
+            <rect x="65" y="1" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="65" y="33" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="97" y="33" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="97" y="65" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="97" y="97" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="97" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="129" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="161" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="193" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="161" y="193" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="161" y="225" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="74" y1="0" x2="184" y2="254" stroke="var(--fig-error)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-error)" />
+            <animate id="badRayEntry" attributeName="opacity" to="5" begin="goodRayExit.end" dur="5.0s" fill="freeze" />
+            <animate id="badRayExit" attributeName="opacity" to="0" begin="badRayEntry.end" dur="5.0s" fill="freeze" />
+        </g>
+    </svg>
+</figure>
+</div>
+<p><em>Figure C</em> shows two rays, <strong>green</strong> with a good access pattern, and <strong>red</strong> with a terrible one.<br>
+The <strong>red</strong> ray has to jump all over the 2D/3D array in memory, causing many cache misses.</p>
+<p><em>This effect gets exaggerated as the grid gets larger.</em></p>
+<h2 id="cache-misses"><a class="header" href="#cache-misses">Cache misses?</a></h2>
+<p>Our modern CPUs have multiple levels of cache memory <em>(L1, L2, L3)</em><br>
+I will not go into great detail about it here.<br></p>
+<p><em>However, what you need to know is :</em><br>
+Whenever you fetch some memory, your CPU will not only fetch exactly what you requested.<br>
+Instead it will fetch a block of memory, called a <span class="yellow">cache line</span> containing your requested memory.<br>
+Which will be placed into your caches, in case you may need anything from that cache line later.<br></p>
+<p>For most modern CPUs a cache line is <code>64 bytes</code> in length and for GPUs its <code>128 bytes</code>.<br>
+Important to note, cache lines are always aligned to their size <em>(64 in most cases)</em><br></p>
+<p>As an example, lets say each cell in our 8x8 grid is <code>8 bytes</code> in size.<br>
+When we read a cell from memory, the cache line would contain <code>8 cells</code> worth of data.</p>
+<figure title="Figure D: CPU Loading a cache line.">
+    <svg class="fig" width="256" viewBox="0 0 258 258">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
+        <g>
+            <rect x="161" y="65" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="193" y="65" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="225" y="65" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="129" y="97" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="97" y="97" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="33" y="97" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="1" y="97" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
+            <rect x="65" y="97" width="32" height="32" fill="none" stroke="var(--fig-y90)" stroke-width="2.5" stroke-linecap="round" />
+        </g>
+    </svg>
+</figure>
+<p><em>Figure D</em> shows what a cache line <em>may</em> look like in our 8x8 grid.<br>
+<em>(it depends on how our grid is aligned in memory)</em></p>
+<p>As you can see, this is nice if our next step in the grid is to the right.<br>
+Because those cells are already in our cache now, so we don't need to go back to RAM. <em>(RAM is slow)</em></p>
+<p>However, in a lot of cases we will move up or down instead.<br>
+Because this memory isn't in our cache, we would cause what is called a <span class="yellow">cache miss</span>.<br>
+In most modern programs this is not a problem at all.<br>
+However, it is when you are shooting <span class="yellow">millions of rays</span> per second.</p>
+<h2 id="space-filling-curves"><a class="header" href="#space-filling-curves">Space filling curves</a></h2>
+<p>We can change the layout of the grid in memory.<br>
+Space filling curves are a great option that let us improve the <span class="yellow">spatial locality</span> of our grids.<br>
+<em>Basically</em>, cells close to each other in space, are also close to each other in memory.</p>
+<div class="h-group">
+<figure title="Figure E: Morton curve.">
+    <svg class="fig" width="256" viewBox="0 0 258 258">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
+        <svg width="256" viewBox="20 299 222 222">
+            <polyline fill="none" points="229.333,507.112 201.556,507.112 229.333,479.333   201.556,479.333 173.778,507.112 146,507.112 173.778,479.333 146,479.333 229.333,451.555 201.556,451.555 229.333,423.778   201.556,423.778 173.778,451.555 146,451.555 173.778,423.778 146,423.778 118.223,507.112 90.444,507.112 118.223,479.333   90.444,479.333 62.667,507.112 34.889,507.112 62.667,479.333 34.889,479.333 118.223,451.555 90.444,451.555 118.223,423.778   90.444,423.778 62.667,451.555 34.889,451.555 62.667,423.778 34.889,423.778 229.333,396 201.556,396 229.333,368.223   201.556,368.223 173.778,396 146,396 173.778,368.223 146,368.223 229.333,340.444 201.556,340.444 229.333,312.667   201.556,312.667 173.778,340.444 146,340.444 173.778,312.667 146,312.667 118.223,396 90.444,396 118.223,368.223 90.444,368.223   62.667,396 34.889,396 62.667,368.223 34.889,368.223 118.223,340.444 90.444,340.444 118.223,312.667 90.444,312.667   62.667,340.444 34.889,340.444 62.667,312.667 34.889,312.667  " stroke="var(--fig-y90)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </svg>
+</figure>
+<figure title="Figure F: Hilbert curve.">
+    <svg class="fig" width="256" viewBox="0 0 258 258">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
+        <svg width="256" viewBox="0 0 512 512">
+            <path xmlns="http://www.w3.org/2000/svg" d="M32,32v64h64v-64h64h64v64h-64v64h64v64h-64h-64v-64h-64v64v64h64v64h-64v64v64h64v-64h64v64h64v-64v-64h-64v-64h64h64h64v64h-64v64v64h64v-64h64v64h64v-64v-64h-64v-64h64v-64v-64h-64v64h-64h-64v-64h64v-64h-64v-64h64h64v64h64v-64" fill="none" stroke="var(--fig-y90)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </svg>
+</figure>
+</div>
+<p><em>Figure E &amp; F</em> show two beautiful space filling curves. <em>(these also extend into 3D)</em><br>
+When we fetch a cell in these new grids, the cache line will contain much more useful additional cells.<br></p>
+<p>The computation required to encode a 2D/3D coordinate onto a Hilbert curve is rather large.<br>
+However it turns out that the Morton encoding is <em>cheap enough</em> to make its use viable.</p>
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#7a7267;">/* Encode 3D coordinate as a morton code. */
+</span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> u64 </span><span style="color:#60a365;">morton_encode</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">x</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">y</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_X_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x9249249249249249</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_Y_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x2492492492492492</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_Z_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x4924924924924924</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(x, BMI_3D_X_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(y, BMI_3D_Y_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(z, BMI_3D_Z_MASK);
+</span><span style="color:#e8d4c0;">}
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#7a7267;">/* Encode 2D coordinate as a morton code. */
+</span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> u64 </span><span style="color:#60a365;">morton_encode</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">x</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">y</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_2D_X_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x5555555555555555</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_2D_Y_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0xAAAAAAAAAAAAAAAA</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(x, BMI_2D_X_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(y, BMI_2D_Y_MASK);
+</span><span style="color:#e8d4c0;">}
+</span></pre>
+<p><sup>Snippet A.</sup></p>
+<p>To encode a 2D/3D coordinate onto a Morton curve, we can use the <code>pdep</code> instruction on x86.<br>
+<em>Snippet A</em> shows how we can do this in C++.<br>
+This is nice and fast, because it only requires a few instructions.</p>
+<p><em>So? What are you gains you may be wondering.</em><br>
+For me it was a bit inconsistent, however it did consistently reduce my frametimes, albeit <span class="yellow">not by much</span>.<br>
+I recon this is because of the extra cost of encoding the coordinates each step.</p>
+<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
+<p>Space filling curves tend to have some constraints.<br>
+For example in the case of our Morton curve, it only works in <span class="yellow">powers of 2</span>.<br>
+So your grid has to be <code>2x2, 4x4, 8x8, 16x16, 32x32, 64x64, ...</code>. <em>(the same goes for 3D)</em></p>
+<p>Furthermore, with a Morton curve your grid <strong>MUST</strong> be a <span class="yellow">perfect cube</span>.<br>
+As in, all sides must be of the same length.</p>
+<h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
+<p>So, We've looked at the main bottleneck of DDA and a way to make it slightly faster.<br></p>
+<p><em>What's next?</em><br>
+There are plenty of other ways to make our grid traversal faster.<br>
+We will be going into 2 algorithms in the following chapters that do just that.<br></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+                            <a rel="next prefetch" href="todo.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+
+        <script src="clipboard.min.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

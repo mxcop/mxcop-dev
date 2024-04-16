@@ -1,8 +1,65 @@
 <div class="page-head">
     <i>13/04/2024 ~ #ray-tracing ~ #voxels ~ #optimization</i>
     <h1><img src="../assets/images/ram-stick.png" title="RAM Stick"> DDA Memory Bottleneck</h1>
-    <p>Reducing memory accesses to increase DDA <span class="yellow">performance</span></p>
+    <p>Improving spatial locality to increase DDA <span class="yellow">performance</span></p>
 </div>
+
+## Introduction
+
+In this series of articles we're going to be diving into grid / voxel traversal and how to make it faster!<br>
+The algorithm we're talking about is [*Amanatides and Woo "A Fast Voxel Traversal Algorithm for Ray Tracing"*](https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing)
+
+We will not go into great detail here as to how it exactly works.<br>
+[This page](https://github.com/cgyurgyik/fast-voxel-traversal-algorithm/blob/master/overview/FastVoxelTraversalOverview.md) has a good overview of the algorithm and how it works.<br>
+Sometimes we may refer to the traversal algorithm(s) as "DDA" *Digital Differential Analyzer*.
+
+*The basic idea is*, we calculate the distance to the next cell boundary for each axis called `tmax`.<br>
+The smallest axis of `tmax` is the axis we step on next.
+
+<figure title="Figure A: Visualization of tmax.">
+    <svg class="fig" width="256" viewBox="0 0 130 130">
+        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="130" height="130" fill="url(#grid)" />
+        <g>
+            <line x1="36" y1="0" x2="82" y2="128" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" stroke-dasharray="6" />
+            <rect x="33" y="65" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
+            <foreignObject x="36" y="67" width="60" height="25" color="var(--fig-error-50)">
+                $ pos $
+            </foreignObject>
+        </g>
+        <g opacity="0">
+            <foreignObject x="6" y="64" width="60" height="25" color="var(--fig-y90)">
+                $ tmax_x $
+            </foreignObject>
+            <line x1="59" y1="64" x2="65" y2="80" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
+            <line x1="65" y1="70" x2="65" y2="86" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
+            <animate id="tmaxXEntry" attributeName="opacity" to="3" begin="0;tmaxYExit.end" dur="3.0s" fill="freeze" />
+            <animate id="tmaxXExit" attributeName="opacity" to="0" begin="tmaxXEntry.end" dur="3.0s" fill="freeze" />
+        </g>
+        <g opacity="0">
+            <foreignObject x="72" y="68" width="60" height="25" color="var(--fig-y90)">
+                $ tmax_y $
+            </foreignObject>
+            <line x1="59" y1="64" x2="70.5" y2="96" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
+            <line x1="66.5" y1="97" x2="74.5" y2="97" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
+            <animate id="tmaxYEntry" attributeName="opacity" to="3" begin="tmaxXExit.end" dur="3.0s" fill="freeze" />
+            <animate id="tmaxYExit" attributeName="opacity" to="0" begin="tmaxYEntry.end" dur="3.0s" fill="freeze" />
+        </g>
+        <g>
+            <line x1="36" y1="0" x2="58" y2="62" stroke="var(--fig-error)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-error)" />
+        </g>
+    </svg>
+</figure>
+
+As we can see in *Figure A*, with `pos` as the current cell;<br>
+the next step should indeed be on the axis where `tmax` is the smallest.<br>
+Then we update `tmax` by adding the reciprocal ray direction to the smallest axis.<br>
+Moving our `pos` is done by adding the ray direction sign to the smallest axis.
+
+Anyway, let's dive in!
 
 ## The problem
 
@@ -12,9 +69,9 @@ all my traversal algorithms were bottlenecked by poor cache utilization.
 Traversing grids is not great for our caches, often causing many many <span class="yellow">cache misses</span>.
 
 For example, we often store our grids in a 2D/3D array in memory.<br>
-The resulting layout would look something like *Figure A*.
+The resulting layout would look something like *Figure B*.
 <div class="h-group">
-<figure title="Figure A: Typical grid order in memory.">
+<figure title="Figure B: Typical grid order in memory.">
     <svg class="fig" width="256" viewBox="0 0 258 258">
         <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
             <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
@@ -45,7 +102,7 @@ The resulting layout would look something like *Figure A*.
         </g>
     </svg>
 </figure>
-<figure title="Figure B: The good and the horrible...">
+<figure title="Figure C: The good and the horrible...">
     <svg class="fig" width="256" viewBox="0 0 258 258">
         <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
             <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
@@ -95,9 +152,10 @@ The resulting layout would look something like *Figure A*.
 </figure>
 </div>
 
-*Figure B* shows two rays, **green** with a good access pattern, and **red** with a terrible one.<br>
+*Figure C* shows two rays, **green** with a good access pattern, and **red** with a terrible one.<br>
 The **red** ray has to jump all over the 2D/3D array in memory, causing many cache misses.
 
+*This effect gets exaggerated as the grid gets larger.*
 
 ## Cache misses?
 
@@ -115,7 +173,7 @@ Important to note, cache lines are always aligned to their size *(64 in most cas
 As an example, lets say each cell in our 8x8 grid is `8 bytes` in size.<br>
 When we read a cell from memory, the cache line would contain `8 cells` worth of data.
 
-<figure title="Figure C: CPU Loading a cache line.">
+<figure title="Figure D: CPU Loading a cache line.">
     <svg class="fig" width="256" viewBox="0 0 258 258">
         <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
             <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
@@ -135,7 +193,7 @@ When we read a cell from memory, the cache line would contain `8 cells` worth of
     </svg>
 </figure>
 
-*Figure C* shows what a cache line *may* look like in our 8x8 grid.<br>
+*Figure D* shows what a cache line *may* look like in our 8x8 grid.<br>
 *(it depends on how our grid is aligned in memory)*
 
 As you can see, this is nice if our next step in the grid is to the right.<br>
@@ -153,7 +211,7 @@ Space filling curves are a great option that let us improve the <span class="yel
 *Basically*, cells close to each other in space, are also close to each other in memory.
 
 <div class="h-group">
-<figure title="Figure C: Morton curve.">
+<figure title="Figure E: Morton curve.">
     <svg class="fig" width="256" viewBox="0 0 258 258">
         <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
             <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
@@ -165,7 +223,7 @@ Space filling curves are a great option that let us improve the <span class="yel
         </svg>
     </svg>
 </figure>
-<figure title="Figure D: Hilbert curve.">
+<figure title="Figure F: Hilbert curve.">
     <svg class="fig" width="256" viewBox="0 0 258 258">
         <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
             <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
@@ -179,13 +237,11 @@ Space filling curves are a great option that let us improve the <span class="yel
 </figure>
 </div>
 
-*Figure C & D* show two of such beautiful space filling curves.<br>
+*Figure E & F* show two beautiful space filling curves. *(these also extend into 3D)*<br>
 When we fetch a cell in these new grids, the cache line will contain much more useful additional cells.<br>
 
 The computation required to encode a 2D/3D coordinate onto a Hilbert curve is rather large.<br>
 However it turns out that the Morton encoding is *cheap enough* to make its use viable.
-
-<div>
 
 ```cpp
 /* Encode 3D coordinate as a morton code. */
@@ -206,8 +262,28 @@ inline u64 morton_encode(const u64 x, const u64 y) {
 }
 ```
 <sup>Snippet A.</sup>
-</div>
 
 To encode a 2D/3D coordinate onto a Morton curve, we can use the `pdep` instruction on x86.<br>
 *Snippet A* shows how we can do this in C++.<br>
 This is nice and fast, because it only requires a few instructions.
+
+*So? What are you gains you may be wondering.*<br>
+For me it was a bit inconsistent, however it did consistently reduce my frametimes, albeit <span class="yellow">not by much</span>.<br>
+I recon this is because of the extra cost of encoding the coordinates each step.
+
+## Limitations
+
+Space filling curves tend to have some constraints.<br>
+For example in the case of our Morton curve, it only works in <span class="yellow">powers of 2</span>.<br>
+So your grid has to be `2x2, 4x4, 8x8, 16x16, 32x32, 64x64, ...`. *(the same goes for 3D)*
+
+Furthermore, with a Morton curve your grid **MUST** be a <span class="yellow">perfect cube</span>.<br>
+As in, all sides must be of the same length.
+
+## Conclusion
+
+So, We've looked at the main bottleneck of DDA and a way to make it slightly faster.<br>
+
+*What's next?*<br>
+There are plenty of other ways to make our grid traversal faster.<br>
+We will be going into 2 algorithms in the following chapters that do just that.<br>
