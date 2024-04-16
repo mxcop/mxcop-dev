@@ -154,6 +154,30 @@ sup {
     color: var(--fig-error);
 }
 
+.end {
+    color: #aaa;
+    font-family: "Monocraft", "JetBrains Mono", monospace;
+    font-size: 1.35rem;
+    margin: auto;
+}
+
+footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+footer .end {
+    margin-bottom: 2rem;
+}
+
+footer i {
+    opacity: .4;
+    font-size: 1.2rem;
+    margin-top: 2rem;
+}
+
 /* Don't change font size in headers. */
 h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
     font-size: unset;
