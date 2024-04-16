@@ -133,6 +133,7 @@ figure:after {
 
 .h-group {
     display: flex;
+    flex-wrap: wrap;
 }
 
 figure {

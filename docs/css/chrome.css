@@ -144,6 +144,12 @@ a > .hljs {
 .js .menu-title {
     cursor: pointer;
 }
+@media only screen and (max-width: 500px) {
+    .menu-title {
+        background-color: transparent !important;
+        background-image: none !important;
+    }
+}
 
 .gradient-text {
     /* Fallback: Set a background color. */
