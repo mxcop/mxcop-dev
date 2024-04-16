@@ -1,6 +1,6 @@
 <div class="page-head">
     <i>13/04/2024 ~ #ray-tracing ~ #voxels ~ #optimization</i>
-    <h1><img src="../assets/images/ram-stick.png" title="RAM Stick"> DDA Memory Bottleneck</h1>
+    <h1><img src="assets/images/ram-stick.png" title="RAM Stick"> DDA Memory Bottleneck</h1>
     <p>Improving spatial locality to increase DDA <span class="yellow">performance</span></p>
 </div>
 

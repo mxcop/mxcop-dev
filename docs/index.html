@@ -437,23 +437,23 @@ Space filling curves are a great option that let us improve the <span class="yel
 When we fetch a cell in these new grids, the cache line will contain much more useful additional cells.<br></p>
 <p>The computation required to encode a 2D/3D coordinate onto a Hilbert curve is rather large.<br>
 However it turns out that the Morton encoding is <em>cheap enough</em> to make its use viable.</p>
-<pre class="code-block" style="background-color:#191919;">
-<span style="color:#7a7267;">/* Encode 3D coordinate as a morton code. */
-</span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> u64 </span><span style="color:#60a365;">morton_encode</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">x</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">y</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_X_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x9249249249249249</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_Y_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x2492492492492492</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_Z_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x4924924924924924</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(x, BMI_3D_X_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(y, BMI_3D_Y_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(z, BMI_3D_Z_MASK);
-</span><span style="color:#e8d4c0;">}
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#7a7267;">/* Encode 2D coordinate as a morton code. */
-</span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> u64 </span><span style="color:#60a365;">morton_encode</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">x</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">y</span><span style="color:#e8d4c0;">) {
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_2D_X_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x5555555555555555</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_2D_Y_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0xAAAAAAAAAAAAAAAA</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(x, BMI_2D_X_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(y, BMI_2D_Y_MASK);
-</span><span style="color:#e8d4c0;">}
+<pre class="code-block" style="background-color:#2b303b;">
+<span style="color:#65737e;">/* Encode 3D coordinate as a morton code. */
+</span><span style="color:#b48ead;">inline</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#8fa1b3;">morton_encode</span><span style="color:#c0c5ce;">(</span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">x</span><span style="color:#c0c5ce;">, </span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">y</span><span style="color:#c0c5ce;">, </span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">z</span><span style="color:#c0c5ce;">) {
+</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_3D_X_MASK = </span><span style="color:#d08770;">0x9249249249249249</span><span style="color:#c0c5ce;">;
+</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_3D_Y_MASK = </span><span style="color:#d08770;">0x2492492492492492</span><span style="color:#c0c5ce;">;
+</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_3D_Z_MASK = </span><span style="color:#d08770;">0x4924924924924924</span><span style="color:#c0c5ce;">;
+</span><span style="color:#c0c5ce;">
+</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">return </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(x, BMI_3D_X_MASK) | </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(y, BMI_3D_Y_MASK) | </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(z, BMI_3D_Z_MASK);
+</span><span style="color:#c0c5ce;">}
+</span><span style="color:#c0c5ce;">
+</span><span style="color:#65737e;">/* Encode 2D coordinate as a morton code. */
+</span><span style="color:#b48ead;">inline</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#8fa1b3;">morton_encode</span><span style="color:#c0c5ce;">(</span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">x</span><span style="color:#c0c5ce;">, </span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">y</span><span style="color:#c0c5ce;">) {
+</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_2D_X_MASK = </span><span style="color:#d08770;">0x5555555555555555</span><span style="color:#c0c5ce;">;
+</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_2D_Y_MASK = </span><span style="color:#d08770;">0xAAAAAAAAAAAAAAAA</span><span style="color:#c0c5ce;">;
+</span><span style="color:#c0c5ce;">
+</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">return </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(x, BMI_2D_X_MASK) | </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(y, BMI_2D_Y_MASK);
+</span><span style="color:#c0c5ce;">}
 </span></pre>
 <p><sup>Snippet A.</sup></p>
 <p>To encode a 2D/3D coordinate onto a Morton curve, we can use the <code>pdep</code> instruction on x86.<br>

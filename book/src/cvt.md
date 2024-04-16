@@ -1,6 +1,6 @@
 <div class="page-head">
     <i>13/04/2024 ~ #ray-tracing ~ #voxels ~ #optimization</i>
-    <h1><img src="../assets/images/ram-stick.png" title="RAM Stick"> Coherent Voxel Traversal</h1>
+    <h1><img src="assets/images/ram-stick.png" title="RAM Stick"> Coherent Voxel Traversal</h1>
     <p>Surpassing the <span class="yellow">memory bottleneck</span></p>
 </div>
 
