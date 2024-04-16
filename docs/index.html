@@ -275,13 +275,13 @@ The smallest axis of <code>tmax</code> is the axis we should step on next.</p>
         </g>
     </svg>
 </figure>
-<p>As we can see in <em>Figure A</em>, with <code>pos</code> as the current cell;<br>
+<p>As we can see in <em>Figure A</em>, with <code>pos</code> as the current cell,<br>
 the next step should indeed be on the axis where <code>tmax</code> is the smallest.<br>
-Then we update <code>tmax</code> by adding the reciprocal ray direction to the smallest axis.<br>
-Moving our <code>pos</code> by adding the ray direction sign to the smallest axis.</p>
+Then, we update <code>tmax</code> by adding the reciprocal ray direction to the smallest axis<br>
+and move <code>pos</code> by adding the ray direction sign to the smallest axis of <code>pos</code>.</p>
 <h2 id="the-problem"><a class="header" href="#the-problem">The problem</a></h2>
-<p>During my journey ray tracing voxels on the CPU, the first thing that became apparent to me was;<br>
-all my traversal algorithms were bottlenecked by poor cache utilization.</p>
+<p>During my journey ray tracing voxels on the CPU, the first thing that became apparent to me was<br>
+that all my traversal algorithms were bottlenecked by poor cache utilization.</p>
 <p>Traversing grids is not great for our caches, often causing many many <span class="yellow">cache misses</span>.</p>
 <p>For example, we often store our grids in a 2D/3D array in memory.<br>
 The resulting layout would look something like <em>Figure B</em>.</p>
