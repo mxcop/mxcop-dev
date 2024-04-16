@@ -27,27 +27,25 @@ The smallest axis of `tmax` is the axis we should step on next.
         <g>
             <line x1="36" y1="0" x2="82" y2="128" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" stroke-dasharray="6" />
             <rect x="33" y="65" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <foreignObject x="36" y="67" width="60" height="25" color="var(--fig-error-50)" style="position: fixed">
+            <foreignObject x="36" y="67" width="60" height="25" color="var(--fig-error-50)">
                 $ pos $
             </foreignObject>
         </g>
-        <g opacity="0">
-            <foreignObject x="6" y="64" width="60" height="25" color="var(--fig-y90)" style="position: fixed">
+        <g visibility="hidden">
+            <foreignObject x="6" y="64" width="60" height="25" color="var(--fig-y90)">
                 $ tmax_x $
             </foreignObject>
             <line x1="59" y1="64" x2="65" y2="80" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
             <line x1="65" y1="70" x2="65" y2="86" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
-            <animate id="tmaxXEntry" attributeName="opacity" to="3" begin="0;tmaxYExit.end" dur="3.0s" fill="freeze" />
-            <animate id="tmaxXExit" attributeName="opacity" to="0" begin="tmaxXEntry.end" dur="3.0s" fill="freeze" />
+            <set id="tmaxX" attributeName="visibility" to="visible" begin="0;tmaxY.end" dur="4.0s" />
         </g>
-        <g opacity="0">
-            <foreignObject x="72" y="68" width="60" height="25" color="var(--fig-y90)" style="position: fixed">
+        <g visibility="hidden">
+            <foreignObject x="72" y="68" width="60" height="25" color="var(--fig-y90)">
                 $ tmax_y $
             </foreignObject>
             <line x1="59" y1="64" x2="70.5" y2="96" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
             <line x1="66.5" y1="97" x2="74.5" y2="97" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
-            <animate id="tmaxYEntry" attributeName="opacity" to="3" begin="tmaxXExit.end" dur="3.0s" fill="freeze" />
-            <animate id="tmaxYExit" attributeName="opacity" to="0" begin="tmaxYEntry.end" dur="3.0s" fill="freeze" />
+            <set id="tmaxY" attributeName="visibility" to="visible" begin="tmaxX.end" dur="4.0s" />
         </g>
         <g>
             <line x1="36" y1="0" x2="58" y2="62" stroke="var(--fig-error)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-error)" />
