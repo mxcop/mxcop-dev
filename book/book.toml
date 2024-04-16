@@ -29,4 +29,4 @@ after = ["links"]
 
 # Syntax highlighting at compile-time
 [preprocessor.syntect]
-custom-theme = "book/src/assets/earthsong.tmTheme"
+custom-theme = "book/theme/earthsong.tmTheme"
