@@ -27,12 +27,12 @@ The smallest axis of `tmax` is the axis we should step on next.
         <g>
             <line x1="36" y1="0" x2="82" y2="128" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" stroke-dasharray="6" />
             <rect x="33" y="65" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <foreignObject x="36" y="67" width="60" height="25" color="var(--fig-error-50)">
+            <foreignObject x="36" y="67" width="60" height="25" color="var(--fig-error-50)" style="position: fixed">
                 $ pos $
             </foreignObject>
         </g>
         <g opacity="0">
-            <foreignObject x="6" y="64" width="60" height="25" color="var(--fig-y90)">
+            <foreignObject x="6" y="64" width="60" height="25" color="var(--fig-y90)" style="position: fixed">
                 $ tmax_x $
             </foreignObject>
             <line x1="59" y1="64" x2="65" y2="80" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
@@ -41,7 +41,7 @@ The smallest axis of `tmax` is the axis we should step on next.
             <animate id="tmaxXExit" attributeName="opacity" to="0" begin="tmaxXEntry.end" dur="3.0s" fill="freeze" />
         </g>
         <g opacity="0">
-            <foreignObject x="72" y="68" width="60" height="25" color="var(--fig-y90)">
+            <foreignObject x="72" y="68" width="60" height="25" color="var(--fig-y90)" style="position: fixed">
                 $ tmax_y $
             </foreignObject>
             <line x1="59" y1="64" x2="70.5" y2="96" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
