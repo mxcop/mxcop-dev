@@ -162,10 +162,10 @@ The **red** ray has to jump all over the 2D/3D array in memory, causing many cac
 Our modern CPUs have multiple levels of cache memory *(L1, L2, L3)*<br>
 I will not go into great detail about it here.<br>
 
-*However, what you need to know is :*<br>
-Whenever you fetch some memory, your CPU will not only fetch exactly what you requested.<br>
-Instead it will fetch a block of memory, called a <span class="yellow">cache line</span> containing your requested memory.<br>
-Which will be placed into your caches, in case you may need anything from that cache line later.<br>
+*However, what we need to know is :*<br>
+Whenever we fetch some memory, our CPUs will not only fetch exactly what we requested.<br>
+Instead it will fetch a block of memory, called a <span class="yellow">cache line</span> containing our requested memory.<br>
+Which will be placed into our caches, in case we may need anything from that cache line later.<br>
 
 For most modern CPUs a cache line is `64 bytes` in length and for GPUs its `128 bytes`.<br>
 Important to note, cache lines are always aligned to their size *(64 in most cases)*<br>
@@ -196,13 +196,13 @@ When we read a cell from memory, the cache line would contain `8 cells` worth of
 *Figure D* shows what a cache line *may* look like in our 8x8 grid.<br>
 *(it depends on how our grid is aligned in memory)*
 
-As you can see, this is nice if our next step in the grid is to the right.<br>
+This is nice if our next step in the grid is to the right.<br>
 Because those cells are already in our cache now, so we don't need to go back to RAM. *(RAM is slow)*
 
 However, in a lot of cases we will move up or down instead.<br>
 Because this memory isn't in our cache, we would cause what is called a <span class="yellow">cache miss</span>.<br>
 In most modern programs this is not a problem at all.<br>
-However, it is when you are shooting <span class="yellow">millions of rays</span> per second.
+However, it is when we are shooting <span class="yellow">millions of rays</span> per second.
 
 ## Space filling curves
 
@@ -267,7 +267,7 @@ To encode a 2D/3D coordinate onto a Morton curve, we can use the `pdep` instruct
 *Snippet A* shows how we can do this in C++.<br>
 This is nice and fast, because it only requires a few instructions.
 
-*So? What are you gains you may be wondering.*<br>
+*So? What are your gains you may be wondering.*<br>
 For me it was a bit inconsistent, however it did consistently reduce my frametimes, albeit <span class="yellow">not by much</span>.<br>
 I recon this is because of the extra cost of encoding the coordinates each step.
 
@@ -275,9 +275,9 @@ I recon this is because of the extra cost of encoding the coordinates each step.
 
 Space filling curves tend to have some constraints.<br>
 For example in the case of our Morton curve, it only works in <span class="yellow">powers of 2</span>.<br>
-So your grid has to be `2x2, 4x4, 8x8, 16x16, 32x32, 64x64, ...`. *(the same goes for 3D)*
+So our grid has to be `2x2, 4x4, 8x8, 16x16, 32x32, 64x64, ...`. *(the same goes for 3D)*
 
-Furthermore, with a Morton curve your grid **MUST** be a <span class="yellow">perfect cube</span>.<br>
+Furthermore, with a Morton curve our grid **MUST** be a <span class="yellow">perfect cube</span>.<br>
 As in, all sides must be of the same length.
 
 ## Conclusion

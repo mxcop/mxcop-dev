@@ -222,7 +222,7 @@ pre.code-block {
 </style>
 <div class="page-head">
     <i>13/04/2024 ~ #ray-tracing ~ #voxels ~ #optimization</i>
-    <h1 id="dda-memory-bottleneck"><a class="header" href="#dda-memory-bottleneck"><img src="../assets/images/ram-stick.png" title="RAM Stick"> DDA Memory Bottleneck</a></h1>
+    <h1 id="dda-memory-bottleneck"><a class="header" href="#dda-memory-bottleneck"><img src="assets/images/ram-stick.png" title="RAM Stick"> DDA Memory Bottleneck</a></h1>
     <p>Improving spatial locality to increase DDA <span class="yellow">performance</span></p>
 </div>
 <h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
@@ -368,10 +368,10 @@ The <strong>red</strong> ray has to jump all over the 2D/3D array in memory, cau
 <h2 id="cache-misses"><a class="header" href="#cache-misses">Cache misses?</a></h2>
 <p>Our modern CPUs have multiple levels of cache memory <em>(L1, L2, L3)</em><br>
 I will not go into great detail about it here.<br></p>
-<p><em>However, what you need to know is :</em><br>
-Whenever you fetch some memory, your CPU will not only fetch exactly what you requested.<br>
-Instead it will fetch a block of memory, called a <span class="yellow">cache line</span> containing your requested memory.<br>
-Which will be placed into your caches, in case you may need anything from that cache line later.<br></p>
+<p><em>However, what we need to know is :</em><br>
+Whenever we fetch some memory, our CPUs will not only fetch exactly what we requested.<br>
+Instead it will fetch a block of memory, called a <span class="yellow">cache line</span> containing our requested memory.<br>
+Which will be placed into our caches, in case we may need anything from that cache line later.<br></p>
 <p>For most modern CPUs a cache line is <code>64 bytes</code> in length and for GPUs its <code>128 bytes</code>.<br>
 Important to note, cache lines are always aligned to their size <em>(64 in most cases)</em><br></p>
 <p>As an example, lets say each cell in our 8x8 grid is <code>8 bytes</code> in size.<br>
@@ -397,12 +397,12 @@ When we read a cell from memory, the cache line would contain <code>8 cells</cod
 </figure>
 <p><em>Figure D</em> shows what a cache line <em>may</em> look like in our 8x8 grid.<br>
 <em>(it depends on how our grid is aligned in memory)</em></p>
-<p>As you can see, this is nice if our next step in the grid is to the right.<br>
+<p>This is nice if our next step in the grid is to the right.<br>
 Because those cells are already in our cache now, so we don't need to go back to RAM. <em>(RAM is slow)</em></p>
 <p>However, in a lot of cases we will move up or down instead.<br>
 Because this memory isn't in our cache, we would cause what is called a <span class="yellow">cache miss</span>.<br>
 In most modern programs this is not a problem at all.<br>
-However, it is when you are shooting <span class="yellow">millions of rays</span> per second.</p>
+However, it is when we are shooting <span class="yellow">millions of rays</span> per second.</p>
 <h2 id="space-filling-curves"><a class="header" href="#space-filling-curves">Space filling curves</a></h2>
 <p>We can change the layout of the grid in memory.<br>
 Space filling curves are a great option that let us improve the <span class="yellow">spatial locality</span> of our grids.<br>
@@ -437,36 +437,36 @@ Space filling curves are a great option that let us improve the <span class="yel
 When we fetch a cell in these new grids, the cache line will contain much more useful additional cells.<br></p>
 <p>The computation required to encode a 2D/3D coordinate onto a Hilbert curve is rather large.<br>
 However it turns out that the Morton encoding is <em>cheap enough</em> to make its use viable.</p>
-<pre class="code-block" style="background-color:#2b303b;">
-<span style="color:#65737e;">/* Encode 3D coordinate as a morton code. */
-</span><span style="color:#b48ead;">inline</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#8fa1b3;">morton_encode</span><span style="color:#c0c5ce;">(</span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">x</span><span style="color:#c0c5ce;">, </span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">y</span><span style="color:#c0c5ce;">, </span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">z</span><span style="color:#c0c5ce;">) {
-</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_3D_X_MASK = </span><span style="color:#d08770;">0x9249249249249249</span><span style="color:#c0c5ce;">;
-</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_3D_Y_MASK = </span><span style="color:#d08770;">0x2492492492492492</span><span style="color:#c0c5ce;">;
-</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_3D_Z_MASK = </span><span style="color:#d08770;">0x4924924924924924</span><span style="color:#c0c5ce;">;
-</span><span style="color:#c0c5ce;">
-</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">return </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(x, BMI_3D_X_MASK) | </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(y, BMI_3D_Y_MASK) | </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(z, BMI_3D_Z_MASK);
-</span><span style="color:#c0c5ce;">}
-</span><span style="color:#c0c5ce;">
-</span><span style="color:#65737e;">/* Encode 2D coordinate as a morton code. */
-</span><span style="color:#b48ead;">inline</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#8fa1b3;">morton_encode</span><span style="color:#c0c5ce;">(</span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">x</span><span style="color:#c0c5ce;">, </span><span style="color:#b48ead;">const</span><span style="color:#c0c5ce;"> u64 </span><span style="color:#bf616a;">y</span><span style="color:#c0c5ce;">) {
-</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_2D_X_MASK = </span><span style="color:#d08770;">0x5555555555555555</span><span style="color:#c0c5ce;">;
-</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">constexpr</span><span style="color:#c0c5ce;"> u64 BMI_2D_Y_MASK = </span><span style="color:#d08770;">0xAAAAAAAAAAAAAAAA</span><span style="color:#c0c5ce;">;
-</span><span style="color:#c0c5ce;">
-</span><span style="color:#c0c5ce;">    </span><span style="color:#b48ead;">return </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(x, BMI_2D_X_MASK) | </span><span style="color:#8fa1b3;">_pdep_u64</span><span style="color:#c0c5ce;">(y, BMI_2D_Y_MASK);
-</span><span style="color:#c0c5ce;">}
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#7a7267;">/* Encode 3D coordinate as a morton code. */
+</span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> u64 </span><span style="color:#60a365;">morton_encode</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">x</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">y</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_X_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x9249249249249249</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_Y_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x2492492492492492</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_Z_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x4924924924924924</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(x, BMI_3D_X_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(y, BMI_3D_Y_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(z, BMI_3D_Z_MASK);
+</span><span style="color:#e8d4c0;">}
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#7a7267;">/* Encode 2D coordinate as a morton code. */
+</span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> u64 </span><span style="color:#60a365;">morton_encode</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">x</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">y</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_2D_X_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x5555555555555555</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_2D_Y_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0xAAAAAAAAAAAAAAAA</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(x, BMI_2D_X_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(y, BMI_2D_Y_MASK);
+</span><span style="color:#e8d4c0;">}
 </span></pre>
 <p><sup>Snippet A.</sup></p>
 <p>To encode a 2D/3D coordinate onto a Morton curve, we can use the <code>pdep</code> instruction on x86.<br>
 <em>Snippet A</em> shows how we can do this in C++.<br>
 This is nice and fast, because it only requires a few instructions.</p>
-<p><em>So? What are you gains you may be wondering.</em><br>
+<p><em>So? What are your gains you may be wondering.</em><br>
 For me it was a bit inconsistent, however it did consistently reduce my frametimes, albeit <span class="yellow">not by much</span>.<br>
 I recon this is because of the extra cost of encoding the coordinates each step.</p>
 <h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
 <p>Space filling curves tend to have some constraints.<br>
 For example in the case of our Morton curve, it only works in <span class="yellow">powers of 2</span>.<br>
-So your grid has to be <code>2x2, 4x4, 8x8, 16x16, 32x32, 64x64, ...</code>. <em>(the same goes for 3D)</em></p>
-<p>Furthermore, with a Morton curve your grid <strong>MUST</strong> be a <span class="yellow">perfect cube</span>.<br>
+So our grid has to be <code>2x2, 4x4, 8x8, 16x16, 32x32, 64x64, ...</code>. <em>(the same goes for 3D)</em></p>
+<p>Furthermore, with a Morton curve our grid <strong>MUST</strong> be a <span class="yellow">perfect cube</span>.<br>
 As in, all sides must be of the same length.</p>
 <h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
 <p>So, We've looked at the main bottleneck of DDA and a way to make it slightly faster.<br></p>
