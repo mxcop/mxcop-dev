@@ -13,8 +13,9 @@ We will not go into great detail here as to how it exactly works.<br>
 [This page](https://github.com/cgyurgyik/fast-voxel-traversal-algorithm/blob/master/overview/FastVoxelTraversalOverview.md) has a good overview of the algorithm and how it works.<br>
 Sometimes we may refer to the traversal algorithm(s) as "DDA" *Digital Differential Analyzer*.
 
-*The basic idea is*, we calculate the distance to the next cell boundary for each axis called `tmax`.<br>
-The smallest axis of `tmax` is the axis we step on next.
+*The basic idea is:*<br>
+We calculate the maximum distance we can traverse before we pass a grid boundary on each axis `tmax`.<br>
+The smallest axis of `tmax` is the axis we should step on next.
 
 <figure title="Figure A: Visualization of tmax.">
     <svg class="fig" width="256" viewBox="0 0 130 130">
@@ -57,9 +58,7 @@ The smallest axis of `tmax` is the axis we step on next.
 As we can see in *Figure A*, with `pos` as the current cell;<br>
 the next step should indeed be on the axis where `tmax` is the smallest.<br>
 Then we update `tmax` by adding the reciprocal ray direction to the smallest axis.<br>
-Moving our `pos` is done by adding the ray direction sign to the smallest axis.
-
-Anyway, let's dive in!
+Moving our `pos` by adding the ray direction sign to the smallest axis.
 
 ## The problem
 

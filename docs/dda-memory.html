@@ -231,8 +231,9 @@ The algorithm we're talking about is <a href="https://www.researchgate.net/publi
 <p>We will not go into great detail here as to how it exactly works.<br>
 <a href="https://github.com/cgyurgyik/fast-voxel-traversal-algorithm/blob/master/overview/FastVoxelTraversalOverview.md">This page</a> has a good overview of the algorithm and how it works.<br>
 Sometimes we may refer to the traversal algorithm(s) as "DDA" <em>Digital Differential Analyzer</em>.</p>
-<p><em>The basic idea is</em>, we calculate the distance to the next cell boundary for each axis called <code>tmax</code>.<br>
-The smallest axis of <code>tmax</code> is the axis we step on next.</p>
+<p><em>The basic idea is:</em><br>
+We calculate the maximum distance we can traverse before we pass a grid boundary on each axis <code>tmax</code>.<br>
+The smallest axis of <code>tmax</code> is the axis we should step on next.</p>
 <figure title="Figure A: Visualization of tmax.">
     <svg class="fig" width="256" viewBox="0 0 130 130">
         <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
@@ -273,8 +274,7 @@ The smallest axis of <code>tmax</code> is the axis we step on next.</p>
 <p>As we can see in <em>Figure A</em>, with <code>pos</code> as the current cell;<br>
 the next step should indeed be on the axis where <code>tmax</code> is the smallest.<br>
 Then we update <code>tmax</code> by adding the reciprocal ray direction to the smallest axis.<br>
-Moving our <code>pos</code> is done by adding the ray direction sign to the smallest axis.</p>
-<p>Anyway, let's dive in!</p>
+Moving our <code>pos</code> by adding the ray direction sign to the smallest axis.</p>
 <h2 id="the-problem"><a class="header" href="#the-problem">The problem</a></h2>
 <p>During my journey ray tracing voxels on the CPU, the first thing that became apparent to me was;<br>
 all my traversal algorithms were bottlenecked by poor cache utilization.</p>
