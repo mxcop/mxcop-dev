@@ -1,12 +1,12 @@
 <div class="page-head">
-    <i>16/04/2024 ~ #ray-tracing ~ #voxels ~ #grid-traversal</i>
+    <i>18/04/2024 ~ #ray-tracing ~ #voxels ~ #grid-traversal</i>
     <h1><img src="assets/images/mushroom.png" title="RAM Stick"> Amanatides and Woo</h1>
-    <p>Traversing through <span class="yellow">grids</span> quickly</p>
+    <p>One <span class="yellow">step</span> at a time</p>
 </div>
 
 ## Introduction
 
-In this article we will deep dive into [Amanatides and Woo's fast voxel traversal algorithm](https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing).<br>
+In this article we will dive deep into [Amanatides and Woo's fast voxel traversal algorithm](https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing).<br>
 Designed for, however not limited to, <span class="yellow">ray tracing</span> voxel grids.<br>
 
 > Most visual examples in this article will be 2D for convenience however, the concepts are the same for 3D.<br>
@@ -60,7 +60,7 @@ For some inspiration: you could fill it with a noise pattern, like Perlin noise.
 
 ## Traversal Concept
 
-The concept of Amanatides and Woo's algorithm is simple:<br>
+The concept of <span class="yellow">Amanatides and Woo's</span> algorithm is simple:<br>
 We find at what time along the ray each axis crosses its next cell boundary.<br>
 The maximum time until we cross the next axis cell boundary is often called `tmax`.
 
@@ -81,8 +81,6 @@ That might sound confusing, to hopefully make it more clear, I made this graphic
         <rect x="0" y="0" width="194.5" height="194.5" rx="3px" ry="3px" fill="url(#grid64)" />
         <g>
             <g fill="none" stroke-dashoffset="21.9" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
-            <path d="m0 97.25h194.5" stroke="#fff" stroke-opacity=".3"/>
-            <path d="m97.25 0v194.5" stroke="#fff" stroke-opacity=".3"/>
             <g stroke="#7b3333">
             <rect x="65.25" y="65.25" width="32" height="32" opacity="1">
                 <animate
@@ -146,16 +144,16 @@ That might sound confusing, to hopefully make it more clear, I made this graphic
                     dur="15s"
                     repeatCount="indefinite" />
             </text>
-            <text x="27.307766" y="150.32771" fill="#fed436" letter-spacing="4px" xml:space="preserve" opacity="1">
-                <tspan x="27.307766" y="150.32771" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="4px" stroke-width="3.3416">x&lt;y</tspan>
+            <text x="27.307766" y="166.32771" fill="#fed436" letter-spacing="4px" xml:space="preserve" opacity="1">
+                <tspan x="27.307766" y="166.32771" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="4px" stroke-width="3.3416">x&lt;y</tspan>
                 <animate
                     attributeName="opacity"
                     values="1;1;1;1;1; 1;0;0;0;0; 0;0;0;0;1"
                     dur="15s"
                     repeatCount="indefinite" />
             </text>
-            <text x="123.363" y="150.02879" fill="#fed436" letter-spacing="4px" xml:space="preserve" opacity="0">
-                <tspan x="123.363" y="150.02879" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="4px" stroke-width="3.3416">y&lt;x</tspan>
+            <text x="123.363" y="166.02879" fill="#fed436" letter-spacing="4px" xml:space="preserve" opacity="0">
+                <tspan x="123.363" y="166.02879" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="4px" stroke-width="3.3416">y&lt;x</tspan>
                 <animate
                     attributeName="opacity"
                     values="0;0;0;0;0; 0;0;0;1;1; 1;1;1;1;0"
@@ -338,8 +336,8 @@ Now there's just 2 more variables left, these variables will be updated <span cl
             <rect x="65.25" y="65.25" width="32" height="32" fill="none" stroke="#7b3333" stroke-dashoffset="21.9" stroke-width="3"/>
             <text x="3.1620638" y="23.12842" fill="#3d3a34" font-size="20.05px" letter-spacing="-4px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" xml:space="preserve"><tspan x="3.1620638" y="23.12842" fill="#3d3a34" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="-4px" stroke-width="3.3416">0,0</tspan></text>
             <path d="m189.52 109.14-2.0996 8.5706 7.0768-2.8089z" fill="#7e4d05" stroke="#7e4d05" stroke-dashoffset="21.9" stroke-width="3"/>
-            <rect x="61.5" y="11.5" width="10.971" height="10.971" fill="none" stroke="#7b3333" stroke-dashoffset="21.9" stroke-width="3"/>
-            <text transform="rotate(-.16513)" x="80.952148" y="20.707891" fill="#7b3333" font-size="10.716px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" xml:space="preserve"><tspan x="80.952148" y="20.707891" fill="#7b3333" font-family="'JetBrains Mono'" font-size="10.716px" font-weight="800" stroke-width="3.3416">current position</tspan></text>
+            <rect x="59.773" y="11.5" width="10.971" height="10.971" fill="none" stroke="#7b3333" stroke-dashoffset="21.9" stroke-width="3"/>
+            <text x="80.952148" y="20.707891" fill="#7b3333" font-size="10.716px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" xml:space="preserve"><tspan x="80.952148" y="20.707891" fill="#7b3333" font-family="'JetBrains Mono'" font-size="10.716px" font-weight="800" stroke-width="3.3416">current position</tspan></text>
             </g>
             <g fill="#fff">
             <path d="m64 81.304 130.5 33.599" stroke="#7e4d05" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
@@ -362,6 +360,7 @@ Now there's just 2 more variables left, these variables will be updated <span cl
 The <span class="yellow">third variable</span> is our `pos` within the grid, we need to initialize it to our entry point in the grid.<br>
 This is very easy to do, we simply make sure our entry point is in grid space *(1 unit = 1 grid cell)*<br>
 And then we truncate the floating entry point to get our entry grid position as seen in *Figure D*.
+> It's also important to `clamp` the `pos` within the grid just in case.
 
 Now for the <span class="yellow">last variable</span> we need the mysterious `tmax` which will let us correctly determine the next step.<br>
 To initialize it, we get the offset between the grid `pos` and the entry point,<br>
