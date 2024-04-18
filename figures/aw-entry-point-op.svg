@@ -5,11 +5,12 @@
  <path d="m65.249 194.5 7e-4 -129.25 129.25 0.16817" fill="none" stroke="#fff" stroke-dasharray="12, 12" stroke-dashoffset="21.9" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
  <g font-size="20.05px" stroke-dasharray="13.3663, 13.3663" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.3416">
   <text x="93.092438" y="134.0918" fill="#ffffff" fill-opacity=".53333" xml:space="preserve"><tspan x="93.092438" y="134.0918" fill="#ffffff" fill-opacity=".53333" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">object</tspan></text>
-  <text x="3.1620638" y="23.12842" fill="#ffffff" fill-opacity=".4" letter-spacing="-4px" xml:space="preserve"><tspan x="3.1620638" y="23.12842" fill="#ffffff" fill-opacity=".4" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="-4px" stroke-width="3.3416">0,0</tspan></text>
+  <text x="3.1620638" y="23.12842" fill="#3d3a34" letter-spacing="-4px" xml:space="preserve"><tspan x="3.1620638" y="23.12842" fill="#3d3a34" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="-4px" stroke-width="3.3416">0,0</tspan></text>
   <text x="49.56469" y="46.115707" fill="#fed436" xml:space="preserve"><tspan x="49.56469" y="46.115707" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">entry</tspan></text>
  </g>
  <path d="m0 64 64 17.304" fill="#fff" stroke="#fed436" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
  <rect x="65.25" y="65.25" width="32" height="32" fill="none" stroke="#fed436" stroke-dashoffset="21.9" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
  <circle cx="65.5" cy="81.686" r="6" fill="#fff"/>
  <circle cx="65.2" cy="65.257" r="6" fill="#fff"/>
+ <path d="m189.52 109.14-2.0996 8.5706 7.0768-2.8089z" fill="#7e4d05" stroke="#7e4d05" stroke-dashoffset="21.9" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
 </svg>

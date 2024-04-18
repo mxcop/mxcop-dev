@@ -25,8 +25,8 @@
      inkscape:document-units="px"
      showgrid="true"
      inkscape:zoom="4.5833574"
-     inkscape:cx="92.290424"
-     inkscape:cy="54.654258"
+     inkscape:cx="79.635945"
+     inkscape:cy="82.799565"
      inkscape:window-width="3840"
      inkscape:window-height="2054"
      inkscape:window-x="-11"
@@ -79,7 +79,7 @@
          style="font-style:normal;font-variant:normal;font-weight:800;font-stretch:normal;font-family:'JetBrains Mono';-inkscape-font-specification:'JetBrains Mono Ultra-Bold';fill:#ffffff;fill-opacity:0.533333;stroke-width:3.34161">object</tspan></text>
     <text
        xml:space="preserve"
-       style="font-size:20.0496px;letter-spacing:-4px;fill:#ffffff;fill-opacity:0.40000001;stroke:none;stroke-width:3.34161;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:13.3663, 13.3663;stroke-dashoffset:0"
+       style="font-size:20.0496px;letter-spacing:-4px;fill:#3d3a34;fill-opacity:1;stroke:none;stroke-width:3.34161;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:13.3663, 13.3663;stroke-dashoffset:0"
        x="3.1620638"
        y="23.12842"
        id="text1-99"><tspan
@@ -87,7 +87,7 @@
          id="tspan1-2"
          x="3.1620638"
          y="23.12842"
-         style="font-style:normal;font-variant:normal;font-weight:800;font-stretch:normal;font-family:'JetBrains Mono';-inkscape-font-specification:'JetBrains Mono Ultra-Bold';letter-spacing:-4px;fill:#ffffff;fill-opacity:0.40000001;stroke-width:3.34161">0,0</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:800;font-stretch:normal;font-family:'JetBrains Mono';-inkscape-font-specification:'JetBrains Mono Ultra-Bold';letter-spacing:-4px;fill:#3d3a34;fill-opacity:1;stroke-width:3.34161">0,0</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:20.0496px;fill:#fed436;fill-opacity:1;stroke:none;stroke-width:3.34161;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:13.3663, 13.3663;stroke-dashoffset:0"
@@ -122,5 +122,10 @@
        cx="65.200058"
        cy="65.257317"
        r="6" />
+    <path
+       style="fill:#7e4d05;fill-opacity:1;stroke:#7e4d05;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:21.9;stroke-opacity:1"
+       d="m 189.52274,109.14148 -2.09955,8.57063 7.07681,-2.80888 z"
+       id="path7"
+       sodipodi:nodetypes="cccc" />
   </g>
 </svg>
