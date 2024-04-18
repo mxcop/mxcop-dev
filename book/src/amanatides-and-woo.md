@@ -6,8 +6,65 @@
 
 ## Introduction
 
+In this article we will deep dive into [Amanatides and Woo's fast voxel traversal algorithm](https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing).<br>
+Designed for, however not limited to, <span class="yellow">ray tracing</span> voxel grids.<br>
+
+> Most visual examples in this article will be 2D for convenience however, the concepts are the same for 3D.<br>
+> All code snippets provided will be using C++ 20 and will be for 3D voxel traversal.
+
+You may wonder *"What can voxel ray tracing do?"*.<br>
+Here's two screenshots taken from my own `CPU` voxel ray tracer: 
+
 <div class="h-group">
-<figure title="Figure A: Ray step (signs)">
+<figure title="Ray traced voxels with lighting">
+<img class="fig" src="./assets/images/lit-voxels.png" width="256">
+</figure>
+<figure title="Ray traced voxel terrain">
+<img class="fig" src="./assets/images/voxel-terrain.png" width="256">
+</figure>
+</div>
+
+Together we're going to find out how and why this algorithm works.<br>
+*So, let's dive in!*
+
+## Prerequisites
+
+To get started tracing anything, we need some <span class="yellow">data to traverse</span>!<br>
+Let's setup a little `VoxelTracer` class together:
+
+```cpp
+constexpr int GRID_SIDE = 32;
+constexpr int GRID_SIZE = GRID_SIDE * GRID_SIDE * GRID_SIDE;
+
+class VoxelTracer {
+    /* Grid voxel data. */
+    unsigned int grid[GRID_SIZE];
+
+    /* Grid position in world space. (x, y, z) */
+    vec3 grid_origin;
+
+  public:
+    VoxelTracer() { /* TODO: fill `grid` with data */ }
+
+    /**
+     * @brief Find the nearest intersection with the grid.
+     * @return `1e30f` if no intersection was found.
+     */
+    float find_nearest(const vec3& ro, const vec3& rd) const;
+};
+```
+
+What to fill `grid` with is up to you.<br>
+Each voxel in the grid is stored as a color `int`, RGBA.<br>
+For some inspiration: you could fill it with a noise pattern, like Perlin noise.
+
+## Traversal Setup
+
+Now that we have some data to traverse, we can start implementing the traversal algorithm.<br>
+Let's start with 2 important variables which will <span class="yellow">remain constant</span> during traversal:
+
+<div class="h-group">
+<figure title="Figure A: Step (direction signs)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -42,7 +99,7 @@
         </g>
     </svg>
 </figure>
-<figure title="Figure B: Ray delta (reciprocal dir)">
+<figure title="Figure B: Delta (reciprocal direction)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -83,7 +140,22 @@
 </figure>
 </div>
 
-Some text...
+The `step` will be used to move through the grid along the ray direction.<br>
+Computed for each axis, if the ray direction axis is **positive** it is `1`  and `-1` if **negative**.<br>
+Here's what that would look like in C++:
+
+```cpp
+/** @brief Get the sign of a float (-1 or 1) */
+inline float getsign(const float f) { return 1 - (((u32&)f) >> 31) * 2; }
+
+/** @brief Get the signs of a 3D vector (-1 or 1) */
+inline vec3 sign_of_dir(const vec3& v) {
+    return vec3(getsign(v.x), getsign(v.y), getsign(v.z));
+}
+```
+
+The second variable we need is `delta`, it is used to update `tmax` later, more on that in the `tmax` section of this article.<br>
+Computed for each axis, it is `1.0` divided by the ray direction axis, also referred to as the reciprocal.
 
 <div class="h-group">
 <figure title="Figure C: Finding entry cell by truncating">

@@ -232,8 +232,56 @@ pre.code-block {
     <p>Traversing through <span class="yellow">grids</span> quickly</p>
 </div>
 <h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>In this article we will deep dive into <a href="https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing">Amanatides and Woo's fast voxel traversal algorithm</a>.<br>
+Designed for, however not limited to, <span class="yellow">ray tracing</span> voxel grids.<br></p>
+<blockquote>
+<p>Most visual examples in this article will be 2D for convenience however, the concepts are the same for 3D.<br>
+All code snippets provided will be using C++ 20 and will be for 3D voxel traversal.</p>
+</blockquote>
+<p>You may wonder <em>"What can voxel ray tracing do?"</em>.<br>
+Here's two screenshots taken from my own <code>CPU</code> voxel ray tracer:</p>
 <div class="h-group">
-<figure title="Figure A: Ray step (signs)">
+<figure title="Ray traced voxels with lighting">
+<img class="fig" src="./assets/images/lit-voxels.png" width="256">
+</figure>
+<figure title="Ray traced voxel terrain">
+<img class="fig" src="./assets/images/voxel-terrain.png" width="256">
+</figure>
+</div>
+<p>Together we're going to find out how and why this algorithm works.<br>
+<em>So, let's dive in!</em></p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>To get started tracing anything, we need some <span class="yellow">data to traverse</span>!<br>
+Let's setup a little <code>VoxelTracer</code> class together:</p>
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#db784d;">constexpr </span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">32</span><span style="color:#e8d4c0;">;
+</span><span style="color:#db784d;">constexpr </span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> GRID_SIZE </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#95cc5e;">class </span><span style="color:#db784d;">VoxelTracer </span><span style="color:#e8d4c0;">{
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Grid voxel data. */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#95cc5e;">unsigned int</span><span style="color:#e8d4c0;"> grid[GRID_SIZE];
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Grid position in world space. (x, y, z) */
+</span><span style="color:#e8d4c0;">    vec3 grid_origin;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">  </span><span style="color:#db784d;">public</span><span style="color:#e8d4c0;">:
+</span><span style="color:#e8d4c0;">    </span><span style="color:#60a365;">VoxelTracer</span><span style="color:#e8d4c0;">() { </span><span style="color:#7a7267;">/* TODO: fill `grid` with data */ </span><span style="color:#e8d4c0;">}
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/**
+</span><span style="color:#7a7267;">     * @brief Find the nearest intersection with the grid.
+</span><span style="color:#7a7267;">     * @return `1e30f` if no intersection was found.
+</span><span style="color:#7a7267;">     */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#95cc5e;">float </span><span style="color:#60a365;">find_nearest</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">ro</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">rd</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">};
+</span></pre>
+<p>What to fill <code>grid</code> with is up to you.<br>
+Each voxel in the grid is stored as a color <code>int</code>, RGBA.<br>
+For some inspiration: you could fill it with a noise pattern, like Perlin noise.</p>
+<h2 id="traversal-setup"><a class="header" href="#traversal-setup">Traversal Setup</a></h2>
+<p>Now that we have some data to traverse, we can start implementing the traversal algorithm.<br>
+Let's start with 2 important variables which will <span class="yellow">remain constant</span> during traversal:</p>
+<div class="h-group">
+<figure title="Figure A: Step (direction signs)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -268,7 +316,7 @@ pre.code-block {
         </g>
     </svg>
 </figure>
-<figure title="Figure B: Ray delta (reciprocal dir)">
+<figure title="Figure B: Delta (reciprocal direction)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -308,7 +356,20 @@ pre.code-block {
     </svg>
 </figure>
 </div>
-<p>Some text...</p>
+<p>The <code>step</code> will be used to move through the grid along the ray direction.<br>
+Computed for each axis, if the ray direction axis is <strong>positive</strong> it is <code>1</code>  and <code>-1</code> if <strong>negative</strong>.<br>
+Here's what that would look like in C++:</p>
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#7a7267;">/** @brief Get the sign of a float (-1 or 1) */
+</span><span style="color:#db784d;">inline </span><span style="color:#95cc5e;">float </span><span style="color:#60a365;">getsign</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float </span><span style="font-style:italic;color:#f8bb39;">f</span><span style="color:#e8d4c0;">) { </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1 </span><span style="color:#db784d;">- </span><span style="color:#e8d4c0;">(((u32</span><span style="color:#db784d;">&amp;</span><span style="color:#e8d4c0;">)f) </span><span style="color:#db784d;">&gt;&gt; </span><span style="color:#eaae2e;">31</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">* </span><span style="color:#eaae2e;">2</span><span style="color:#e8d4c0;">; }
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#7a7267;">/** @brief Get the signs of a 3D vector (-1 or 1) */
+</span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> vec3 </span><span style="color:#60a365;">sign_of_dir</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">v</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">vec3</span><span style="color:#e8d4c0;">(</span><span style="color:#207241;">getsign</span><span style="color:#e8d4c0;">(v.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">), </span><span style="color:#207241;">getsign</span><span style="color:#e8d4c0;">(v.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">), </span><span style="color:#207241;">getsign</span><span style="color:#e8d4c0;">(v.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">));
+</span><span style="color:#e8d4c0;">}
+</span></pre>
+<p>The second variable we need is <code>delta</code>, it is used to update <code>tmax</code> later, more on that in the <code>tmax</code> section of this article.<br>
+Computed for each axis, it is <code>1.0</code> divided by the ray direction axis, also referred to as the reciprocal.</p>
 <div class="h-group">
 <figure title="Figure C: Finding entry cell by truncating">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
