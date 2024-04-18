@@ -58,13 +58,129 @@ What to fill `grid` with is up to you.<br>
 Each voxel in the grid is stored as a color `int`, RGBA.<br>
 For some inspiration: you could fill it with a noise pattern, like Perlin noise.
 
+## Traversal Concept
+
+The concept of Amanatides and Woo's algorithm is simple:<br>
+We find at what time along the ray each axis crosses its next cell boundary.<br>
+The maximum time until we cross the next axis cell boundary is often called `tmax`.
+
+At any point in the grid our next step will be on the axis where `tmax` is the smallest.<br>
+That might sound confusing, to hopefully make it more clear, I made this graphic:
+
+<figure title="Figure A: Amanatides and Woo in action">
+    <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
+        <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="#342c28" stroke-width="4" />
+        </pattern>
+        <pattern id="grid64" width="64" height="64" patternUnits="userSpaceOnUse">
+            <rect width="64" height="64" fill="url(#grid32)" />
+            <line x1="0" y1="0" x2="0" y2="64" stroke="#3d3a34" stroke-width="5" />
+            <line x1="0" y1="0" x2="64" y2="0" stroke="#3d3a34" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="194.5" height="194.5" rx="3px" ry="3px" fill="url(#grid64)" />
+        <g>
+            <g fill="none" stroke-dashoffset="21.9" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+            <path d="m0 97.25h194.5" stroke="#fff" stroke-opacity=".3"/>
+            <path d="m97.25 0v194.5" stroke="#fff" stroke-opacity=".3"/>
+            <g stroke="#7b3333">
+            <rect x="65.25" y="65.25" width="32" height="32" opacity="1">
+                <animate
+                    attributeName="opacity"
+                    values="1;1;1;1;1; 0;0;0;0;0; 0;0;0;0;3"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </rect>
+            <rect x="97.25" y="65.25" width="32" height="32" opacity="0">
+                <animate
+                    attributeName="opacity"
+                    values="0;0;0;0;0; 1;1;1;1;1; 0;0;0;0;0"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </rect>
+            <rect x="97.25" y="97.25" width="32" height="32" opacity="0">
+                <animate
+                    attributeName="opacity"
+                    values="0;0;0;0;0; 0;0;0;0;0; 1;1;1;1;0"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </rect>
+            </g>
+            </g>
+            <g stroke-linecap="round" stroke-linejoin="round">
+            <text x="3.1620638" y="23.12842" fill="#3d3a34" font-size="20.05px" letter-spacing="-4px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" xml:space="preserve"><tspan x="3.1620638" y="23.12842" fill="#3d3a34" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="-4px" stroke-width="3.3416">0,0</tspan></text>
+            <path d="m189.52 109.14-2.0996 8.5706 7.0768-2.8089z" fill="#7e4d05" stroke="#7e4d05" stroke-dashoffset="21.9" stroke-width="3"/>
+            <rect x="59.773" y="11.5" width="10.971" height="10.971" fill="none" stroke="#7b3333" stroke-dashoffset="21.9" stroke-width="3"/>
+            <text x="80.952148" y="20.707891" fill="#7b3333" font-size="10.716px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" xml:space="preserve"><tspan x="80.952148" y="20.707891" fill="#7b3333" font-family="'JetBrains Mono'" font-size="10.716px" font-weight="800" stroke-width="3.3416">current position</tspan></text>
+            </g>
+            <g fill="#fff">
+            <path d="m64 81.304 130.5 33.599" stroke="#7e4d05" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+            <path d="m0 64 64 17.304" stroke="#fed436" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+            <circle cx="65.5" cy="81.25" r="6"/>
+            <circle cx="97.25" cy="89.562" r="6">
+                <animate
+                    attributeName="cx"
+                    values="97.25;97.25;97.25;97.25;97.25; 97.25;97.25;129.25;129.25;129.25; 129.25;129.25;129.25;129.25;97.25"
+                    dur="15s"
+                    repeatCount="indefinite" />
+                <animate
+                    attributeName="cy"
+                    values="89.56;89.56;89.56;89.56;89.56; 89.56;89.56;98.1;98.1;98.1; 98.1;98.1;98.1;98.1;89.56"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </circle>
+            <circle cx="126.17" cy="97.25" r="6"/>
+            </g>
+            <g font-size="20.05px" stroke-dasharray="13.3663, 13.3663" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.3416">
+            <text x="91.370811" y="110.78358" fill="#ffffff" xml:space="preserve" opacity="1"><tspan x="91.370811" y="110.78358" fill="#ffffff" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">x</tspan>
+                <animate
+                    attributeName="opacity"
+                    values="1;1;1;1;1; 1;0;0;0;0; 0;0;0;0;1"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </text>
+            <text x="123.34025" y="87.041496" fill="#ffffff" xml:space="preserve" opacity="0"><tspan x="123.34025" y="87.041496" fill="#ffffff" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">x</tspan>
+                <animate
+                    attributeName="opacity"
+                    values="0;0;0;0;0; 0;0;0;1;1; 1;1;1;1;0"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </text>
+            <text x="27.307766" y="150.32771" fill="#fed436" letter-spacing="4px" xml:space="preserve" opacity="1">
+                <tspan x="27.307766" y="150.32771" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="4px" stroke-width="3.3416">x&lt;y</tspan>
+                <animate
+                    attributeName="opacity"
+                    values="1;1;1;1;1; 1;0;0;0;0; 0;0;0;0;1"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </text>
+            <text x="123.363" y="150.02879" fill="#fed436" letter-spacing="4px" xml:space="preserve" opacity="0">
+                <tspan x="123.363" y="150.02879" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="4px" stroke-width="3.3416">y&lt;x</tspan>
+                <animate
+                    attributeName="opacity"
+                    values="0;0;0;0;0; 0;0;0;1;1; 1;1;1;1;0"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </text>
+            <text x="120.29847" y="117.86388" fill="#ffffff" xml:space="preserve"><tspan x="120.29847" y="117.86388" fill="#ffffff" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">y</tspan></text>
+            </g>
+        </g>
+    </svg>
+</figure>
+
+We can see that on the <span class="yellow">1st</span> step, `tmax.x` is the smallest, because the `x` axis will cross its cell boundary before the `y` axis.<br>
+Then on the <span class="yellow">2nd</span> step, `tmax.x` was updated and it is now larger than `tmax.y`, therefore the next step is on the `y` axis.<br>
+
+Now the question is *"How do we calculate `tmax`?"*.<br>
+That's what we're going to find out next.
+
 ## Traversal Setup
 
-Now that we have some data to traverse, we can start implementing the traversal algorithm.<br>
+Now that we have some data to traverse, and we understand the basic concept, we can start implementing the algorithm.<br>
 Let's start with 2 important variables which will <span class="yellow">remain constant</span> during traversal:
 
 <div class="h-group">
-<figure title="Figure A: Step (direction signs)">
+<figure title="Figure B: Step (direction signs)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -99,7 +215,7 @@ Let's start with 2 important variables which will <span class="yellow">remain co
         </g>
     </svg>
 </figure>
-<figure title="Figure B: Delta (reciprocal direction)">
+<figure title="Figure C: Delta (reciprocal direction)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -140,13 +256,13 @@ Let's start with 2 important variables which will <span class="yellow">remain co
 </figure>
 </div>
 
-The `step` will be used to move through the grid along the ray direction.<br>
+The <span class="yellow">first variable</span> `step` will be used to move through the grid along the ray direction.<br>
 Computed for each axis, if the ray direction axis is **positive** it is `1`  and `-1` if **negative**.<br>
 Here's what that would look like in C++:
 
 ```cpp
 /** @brief Get the sign of a float (-1 or 1) */
-inline float getsign(const float f) { return 1 - (((u32&)f) >> 31) * 2; }
+inline float getsign(const float f) { return 1 - (((unsigned int&)f) >> 31) * 2; }
 
 /** @brief Get the signs of a 3D vector (-1 or 1) */
 inline vec3 sign_of_dir(const vec3& v) {
@@ -154,11 +270,13 @@ inline vec3 sign_of_dir(const vec3& v) {
 }
 ```
 
-The second variable we need is `delta`, it is used to update `tmax` later, more on that in the `tmax` section of this article.<br>
-Computed for each axis, it is `1.0` divided by the ray direction axis, also referred to as the reciprocal.
+The <span class="yellow">second variable</span> we need is `delta`, it is used to update `tmax` during traversal.<br>
+Computed for each axis, it is the **absolute** of `1.0` divided by the ray direction axis, also referred to as the reciprocal.
+
+Now there's just 2 more variables left, these variables will be updated <span class="yellow">every step</span> during traversal.
 
 <div class="h-group">
-<figure title="Figure C: Finding entry cell by truncating">
+<figure title="Figure D: Finding entry cell by truncating">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -203,7 +321,7 @@ Computed for each axis, it is `1.0` divided by the ray direction axis, also refe
         </g>
     </svg>
 </figure>
-<figure title="Figure D: Time at next cell boundary (tmax)">
+<figure title="Figure E: Time at next cell boundary (tmax)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -240,3 +358,116 @@ Computed for each axis, it is `1.0` divided by the ray direction axis, also refe
     </svg>
 </figure>
 </div>
+
+The <span class="yellow">third variable</span> is our `pos` within the grid, we need to initialize it to our entry point in the grid.<br>
+This is very easy to do, we simply make sure our entry point is in grid space *(1 unit = 1 grid cell)*<br>
+And then we truncate the floating entry point to get our entry grid position as seen in *Figure D*.
+
+Now for the <span class="yellow">last variable</span> we need the mysterious `tmax` which will let us correctly determine the next step.<br>
+To initialize it, we get the offset between the grid `pos` and the entry point,<br>
+add only the positive part of our `step`, and finally divide by the ray direction `rd`.
+
+```cpp
+/* Initialize the time along the ray when each axis crosses its next cell boundary. */
+vec3 tmax = (pos - entry_pos + max(step, 0)) / rd;
+```
+
+Adding only the positive part of our `step` is important because each grid cells origin lies in its top left.<br>
+So when our ray is moving in the positive direction, we need to adjust for that fact,<br>
+while in the negative direction it is already correct.
+
+Dividing by the ray direction is done to transform our `tmax` into the *"ray direction space"*.<br>
+This is important because later we will be updating `tmax` using our `delta`.
+
+**Finally!** We have everything setup, and we're ready to start traversing!
+
+## Traversal
+
+*Explain the traversal algorithm, with code examples.*
+
+Now that everything is already setup for us, we get to the easiest part, the actual traversal.<br>
+As I mentioned in the *Concept* part of the article, we will simply step based on the smallest axis of `tmax`.<br>
+And after every step, we update our `pos` and `tmax`.
+
+```cpp
+constexpr int MAX_STEPS = 64;
+
+/* Get our traversal constants */
+const vec3 step = sign_of_dir(rd);
+const vec3 delta = abs(1.0f / rd);
+
+/* IMPORTANT: Clamp the entry point inside the grid */
+vec3 pos = clamp(floor(entry_pos), 0, GRID_SIDE);
+
+/* Initialize the time along the ray when each axis crosses its next cell boundary. */
+vec3 tmax = (pos - entry_pos + max(step, 0)) / rd;
+
+/* The traversal loop */
+float t = 0;
+for (int steps = 0; steps < MAX_STEPS; ++steps) {
+    /* Fetch the cell at our current position */
+    const unsigned int voxel = grid[pos.z * GRID_SIZE * GRID_SIDE + pos.y * GRID_SIDE + pos.x];
+
+    /* Check if we hit a voxel which isn't 0 */ 
+    if (voxel) {
+        /* Return the time of intersection! */
+        return entry_t + t;
+    }
+
+    /* Step on the axis where `tmax` is the smallest */ 
+    if (tmax.x < tmax.y) {
+        if (tmax.x < tmax.z) {
+            pos.x += step.x;
+            if (pos.x < 0 || pos.x >= GRID_SIDE) break;
+            t = tmax.x;
+            tmax.x += delta.x;
+        } else {
+            pos.z += step.z;
+            if (pos.z < 0 || pos.z >= GRID_SIDE) break;
+            t = tmax.z;
+            tmax.z += delta.z;
+        }
+    } else {
+        if (tmax.y < tmax.z) {
+            pos.y += step.y;
+            if (pos.y < 0 || pos.y >= GRID_SIDE) break;
+            t = tmax.y;
+            tmax.y += delta.y;
+        } else {
+            pos.z += step.z;
+            if (pos.z < 0 || pos.z >= GRID_SIDE) break;
+            t = tmax.z;
+            tmax.z += delta.z;
+        }
+    }
+}
+```
+
+In this code snippet, we also track `t` the current time in the grid.<br>
+Because when we hit something, we want to return the time of intersection with whatever we hit.
+
+*TODO: Maybe move this section below here UP?*
+
+Something else interesting is our `entry_t` and `entry_pos`, where are those coming from?<br>
+We can simply obtain those using a basic ray box intersection test.
+
+```cpp
+float ray_box_intersect(const box& b, const ray& r) {
+    const float tx1 = (b.min.x - r.x0.x)*r.n_inv.x;
+    const float tx2 = (b.max.x - r.x0.x)*r.n_inv.x;
+
+    float tmin = min(tx1, tx2);
+    float tmax = max(tx1, tx2);
+
+    const float ty1 = (b.min.y - r.x0.y)*r.n_inv.y;
+    const float ty2 = (b.max.y - r.x0.y)*r.n_inv.y;
+
+    tmin = max(tmin, min(ty1, ty2));
+    tmax = min(tmax, max(ty1, ty2));
+
+    if (tmax >= tmin && tmin > 0)
+        return tmin;
+    else
+        return 1e30f; /* miss */
+}
+```

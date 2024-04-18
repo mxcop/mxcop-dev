@@ -277,11 +277,121 @@ Let's setup a little <code>VoxelTracer</code> class together:</p>
 <p>What to fill <code>grid</code> with is up to you.<br>
 Each voxel in the grid is stored as a color <code>int</code>, RGBA.<br>
 For some inspiration: you could fill it with a noise pattern, like Perlin noise.</p>
+<h2 id="traversal-concept"><a class="header" href="#traversal-concept">Traversal Concept</a></h2>
+<p>The concept of Amanatides and Woo's algorithm is simple:<br>
+We find at what time along the ray each axis crosses its next cell boundary.<br>
+The maximum time until we cross the next axis cell boundary is often called <code>tmax</code>.</p>
+<p>At any point in the grid our next step will be on the axis where <code>tmax</code> is the smallest.<br>
+That might sound confusing, to hopefully make it more clear, I made this graphic:</p>
+<figure title="Figure A: Amanatides and Woo in action">
+    <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
+        <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="#342c28" stroke-width="4" />
+        </pattern>
+        <pattern id="grid64" width="64" height="64" patternUnits="userSpaceOnUse">
+            <rect width="64" height="64" fill="url(#grid32)" />
+            <line x1="0" y1="0" x2="0" y2="64" stroke="#3d3a34" stroke-width="5" />
+            <line x1="0" y1="0" x2="64" y2="0" stroke="#3d3a34" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="194.5" height="194.5" rx="3px" ry="3px" fill="url(#grid64)" />
+        <g>
+            <g fill="none" stroke-dashoffset="21.9" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+            <path d="m0 97.25h194.5" stroke="#fff" stroke-opacity=".3"/>
+            <path d="m97.25 0v194.5" stroke="#fff" stroke-opacity=".3"/>
+            <g stroke="#7b3333">
+            <rect x="65.25" y="65.25" width="32" height="32" opacity="1">
+                <animate
+                    attributeName="opacity"
+                    values="1;1;1;1;1; 0;0;0;0;0; 0;0;0;0;3"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </rect>
+            <rect x="97.25" y="65.25" width="32" height="32" opacity="0">
+                <animate
+                    attributeName="opacity"
+                    values="0;0;0;0;0; 1;1;1;1;1; 0;0;0;0;0"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </rect>
+            <rect x="97.25" y="97.25" width="32" height="32" opacity="0">
+                <animate
+                    attributeName="opacity"
+                    values="0;0;0;0;0; 0;0;0;0;0; 1;1;1;1;0"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </rect>
+            </g>
+            </g>
+            <g stroke-linecap="round" stroke-linejoin="round">
+            <text x="3.1620638" y="23.12842" fill="#3d3a34" font-size="20.05px" letter-spacing="-4px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" xml:space="preserve"><tspan x="3.1620638" y="23.12842" fill="#3d3a34" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="-4px" stroke-width="3.3416">0,0</tspan></text>
+            <path d="m189.52 109.14-2.0996 8.5706 7.0768-2.8089z" fill="#7e4d05" stroke="#7e4d05" stroke-dashoffset="21.9" stroke-width="3"/>
+            <rect x="59.773" y="11.5" width="10.971" height="10.971" fill="none" stroke="#7b3333" stroke-dashoffset="21.9" stroke-width="3"/>
+            <text x="80.952148" y="20.707891" fill="#7b3333" font-size="10.716px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" xml:space="preserve"><tspan x="80.952148" y="20.707891" fill="#7b3333" font-family="'JetBrains Mono'" font-size="10.716px" font-weight="800" stroke-width="3.3416">current position</tspan></text>
+            </g>
+            <g fill="#fff">
+            <path d="m64 81.304 130.5 33.599" stroke="#7e4d05" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+            <path d="m0 64 64 17.304" stroke="#fed436" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+            <circle cx="65.5" cy="81.25" r="6"/>
+            <circle cx="97.25" cy="89.562" r="6">
+                <animate
+                    attributeName="cx"
+                    values="97.25;97.25;97.25;97.25;97.25; 97.25;97.25;129.25;129.25;129.25; 129.25;129.25;129.25;129.25;97.25"
+                    dur="15s"
+                    repeatCount="indefinite" />
+                <animate
+                    attributeName="cy"
+                    values="89.56;89.56;89.56;89.56;89.56; 89.56;89.56;98.1;98.1;98.1; 98.1;98.1;98.1;98.1;89.56"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </circle>
+            <circle cx="126.17" cy="97.25" r="6"/>
+            </g>
+            <g font-size="20.05px" stroke-dasharray="13.3663, 13.3663" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.3416">
+            <text x="91.370811" y="110.78358" fill="#ffffff" xml:space="preserve" opacity="1"><tspan x="91.370811" y="110.78358" fill="#ffffff" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">x</tspan>
+                <animate
+                    attributeName="opacity"
+                    values="1;1;1;1;1; 1;0;0;0;0; 0;0;0;0;1"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </text>
+            <text x="123.34025" y="87.041496" fill="#ffffff" xml:space="preserve" opacity="0"><tspan x="123.34025" y="87.041496" fill="#ffffff" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">x</tspan>
+                <animate
+                    attributeName="opacity"
+                    values="0;0;0;0;0; 0;0;0;1;1; 1;1;1;1;0"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </text>
+            <text x="27.307766" y="150.32771" fill="#fed436" letter-spacing="4px" xml:space="preserve" opacity="1">
+                <tspan x="27.307766" y="150.32771" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="4px" stroke-width="3.3416">x&lt;y</tspan>
+                <animate
+                    attributeName="opacity"
+                    values="1;1;1;1;1; 1;0;0;0;0; 0;0;0;0;1"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </text>
+            <text x="123.363" y="150.02879" fill="#fed436" letter-spacing="4px" xml:space="preserve" opacity="0">
+                <tspan x="123.363" y="150.02879" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="4px" stroke-width="3.3416">y&lt;x</tspan>
+                <animate
+                    attributeName="opacity"
+                    values="0;0;0;0;0; 0;0;0;1;1; 1;1;1;1;0"
+                    dur="15s"
+                    repeatCount="indefinite" />
+            </text>
+            <text x="120.29847" y="117.86388" fill="#ffffff" xml:space="preserve"><tspan x="120.29847" y="117.86388" fill="#ffffff" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">y</tspan></text>
+            </g>
+        </g>
+    </svg>
+</figure>
+<p>We can see that on the <span class="yellow">1st</span> step, <code>tmax.x</code> is the smallest, because the <code>x</code> axis will cross its cell boundary before the <code>y</code> axis.<br>
+Then on the <span class="yellow">2nd</span> step, <code>tmax.x</code> was updated and it is now larger than <code>tmax.y</code>, therefore the next step is on the <code>y</code> axis.<br></p>
+<p>Now the question is <em>"How do we calculate <code>tmax</code>?"</em>.<br>
+That's what we're going to find out next.</p>
 <h2 id="traversal-setup"><a class="header" href="#traversal-setup">Traversal Setup</a></h2>
-<p>Now that we have some data to traverse, we can start implementing the traversal algorithm.<br>
+<p>Now that we have some data to traverse, and we understand the basic concept, we can start implementing the algorithm.<br>
 Let's start with 2 important variables which will <span class="yellow">remain constant</span> during traversal:</p>
 <div class="h-group">
-<figure title="Figure A: Step (direction signs)">
+<figure title="Figure B: Step (direction signs)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -316,7 +426,7 @@ Let's start with 2 important variables which will <span class="yellow">remain co
         </g>
     </svg>
 </figure>
-<figure title="Figure B: Delta (reciprocal direction)">
+<figure title="Figure C: Delta (reciprocal direction)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -356,22 +466,23 @@ Let's start with 2 important variables which will <span class="yellow">remain co
     </svg>
 </figure>
 </div>
-<p>The <code>step</code> will be used to move through the grid along the ray direction.<br>
+<p>The <span class="yellow">first variable</span> <code>step</code> will be used to move through the grid along the ray direction.<br>
 Computed for each axis, if the ray direction axis is <strong>positive</strong> it is <code>1</code>  and <code>-1</code> if <strong>negative</strong>.<br>
 Here's what that would look like in C++:</p>
 <pre class="code-block" style="background-color:#191919;">
 <span style="color:#7a7267;">/** @brief Get the sign of a float (-1 or 1) */
-</span><span style="color:#db784d;">inline </span><span style="color:#95cc5e;">float </span><span style="color:#60a365;">getsign</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float </span><span style="font-style:italic;color:#f8bb39;">f</span><span style="color:#e8d4c0;">) { </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1 </span><span style="color:#db784d;">- </span><span style="color:#e8d4c0;">(((u32</span><span style="color:#db784d;">&amp;</span><span style="color:#e8d4c0;">)f) </span><span style="color:#db784d;">&gt;&gt; </span><span style="color:#eaae2e;">31</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">* </span><span style="color:#eaae2e;">2</span><span style="color:#e8d4c0;">; }
+</span><span style="color:#db784d;">inline </span><span style="color:#95cc5e;">float </span><span style="color:#60a365;">getsign</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float </span><span style="font-style:italic;color:#f8bb39;">f</span><span style="color:#e8d4c0;">) { </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1 </span><span style="color:#db784d;">- </span><span style="color:#e8d4c0;">(((</span><span style="color:#95cc5e;">unsigned int</span><span style="color:#db784d;">&amp;</span><span style="color:#e8d4c0;">)f) </span><span style="color:#db784d;">&gt;&gt; </span><span style="color:#eaae2e;">31</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">* </span><span style="color:#eaae2e;">2</span><span style="color:#e8d4c0;">; }
 </span><span style="color:#e8d4c0;">
 </span><span style="color:#7a7267;">/** @brief Get the signs of a 3D vector (-1 or 1) */
 </span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> vec3 </span><span style="color:#60a365;">sign_of_dir</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">v</span><span style="color:#e8d4c0;">) {
 </span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">vec3</span><span style="color:#e8d4c0;">(</span><span style="color:#207241;">getsign</span><span style="color:#e8d4c0;">(v.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">), </span><span style="color:#207241;">getsign</span><span style="color:#e8d4c0;">(v.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">), </span><span style="color:#207241;">getsign</span><span style="color:#e8d4c0;">(v.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">));
 </span><span style="color:#e8d4c0;">}
 </span></pre>
-<p>The second variable we need is <code>delta</code>, it is used to update <code>tmax</code> later, more on that in the <code>tmax</code> section of this article.<br>
-Computed for each axis, it is <code>1.0</code> divided by the ray direction axis, also referred to as the reciprocal.</p>
+<p>The <span class="yellow">second variable</span> we need is <code>delta</code>, it is used to update <code>tmax</code> during traversal.<br>
+Computed for each axis, it is the <strong>absolute</strong> of <code>1.0</code> divided by the ray direction axis, also referred to as the reciprocal.</p>
+<p>Now there's just 2 more variables left, these variables will be updated <span class="yellow">every step</span> during traversal.</p>
 <div class="h-group">
-<figure title="Figure C: Finding entry cell by truncating">
+<figure title="Figure D: Finding entry cell by truncating">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -416,7 +527,7 @@ Computed for each axis, it is <code>1.0</code> divided by the ray direction axis
         </g>
     </svg>
 </figure>
-<figure title="Figure D: Time at next cell boundary (tmax)">
+<figure title="Figure E: Time at next cell boundary (tmax)">
     <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
         <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
@@ -453,6 +564,105 @@ Computed for each axis, it is <code>1.0</code> divided by the ray direction axis
     </svg>
 </figure>
 </div>
+<p>The <span class="yellow">third variable</span> is our <code>pos</code> within the grid, we need to initialize it to our entry point in the grid.<br>
+This is very easy to do, we simply make sure our entry point is in grid space <em>(1 unit = 1 grid cell)</em><br>
+And then we truncate the floating entry point to get our entry grid position as seen in <em>Figure D</em>.</p>
+<p>Now for the <span class="yellow">last variable</span> we need the mysterious <code>tmax</code> which will let us correctly determine the next step.<br>
+To initialize it, we get the offset between the grid <code>pos</code> and the entry point,<br>
+add only the positive part of our <code>step</code>, and finally divide by the ray direction <code>rd</code>.</p>
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#7a7267;">/* Initialize the time along the ray when each axis crosses its next cell boundary. */
+</span><span style="color:#e8d4c0;">vec3 tmax </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(pos </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> entry_pos </span><span style="color:#db784d;">+ </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(step, </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">)) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd;
+</span></pre>
+<p>Adding only the positive part of our <code>step</code> is important because each grid cells origin lies in its top left.<br>
+So when our ray is moving in the positive direction, we need to adjust for that fact,<br>
+while in the negative direction it is already correct.</p>
+<p>Dividing by the ray direction is done to transform our <code>tmax</code> into the <em>"ray direction space"</em>.<br>
+This is important because later we will be updating <code>tmax</code> using our <code>delta</code>.</p>
+<p><strong>Finally!</strong> We have everything setup, and we're ready to start traversing!</p>
+<h2 id="traversal"><a class="header" href="#traversal">Traversal</a></h2>
+<p><em>Explain the traversal algorithm, with code examples.</em></p>
+<p>Now that everything is already setup for us, we get to the easiest part, the actual traversal.<br>
+As I mentioned in the <em>Concept</em> part of the article, we will simply step based on the smallest axis of <code>tmax</code>.<br>
+And after every step, we update our <code>pos</code> and <code>tmax</code>.</p>
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#db784d;">constexpr </span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> MAX_STEPS </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">64</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#7a7267;">/* Get our traversal constants */
+</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 step </span><span style="color:#db784d;">= </span><span style="color:#207241;">sign_of_dir</span><span style="color:#e8d4c0;">(rd);
+</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 delta </span><span style="color:#db784d;">= </span><span style="color:#95cc5e;">abs</span><span style="color:#e8d4c0;">(</span><span style="color:#eaae2e;">1.0f </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd);
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#7a7267;">/* IMPORTANT: Clamp the entry point inside the grid */
+</span><span style="color:#e8d4c0;">vec3 pos </span><span style="color:#db784d;">= </span><span style="color:#207241;">clamp</span><span style="color:#e8d4c0;">(</span><span style="color:#95cc5e;">floor</span><span style="color:#e8d4c0;">(entry_pos), </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">, GRID_SIDE);
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#7a7267;">/* Initialize the time along the ray when each axis crosses its next cell boundary. */
+</span><span style="color:#e8d4c0;">vec3 tmax </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(pos </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> entry_pos </span><span style="color:#db784d;">+ </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(step, </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">)) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#7a7267;">/* The traversal loop */
+</span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> t </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">;
+</span><span style="color:#db784d;">for </span><span style="color:#e8d4c0;">(</span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> steps </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">; steps </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> MAX_STEPS; </span><span style="color:#db784d;">++</span><span style="color:#e8d4c0;">steps) {
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Fetch the cell at our current position */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">unsigned int</span><span style="color:#e8d4c0;"> voxel </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> grid[pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIZE </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">];
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Check if we hit a voxel which isn&#39;t 0 */ 
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(voxel) {
+</span><span style="color:#e8d4c0;">        </span><span style="color:#7a7267;">/* Return the time of intersection! */
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">return</span><span style="color:#e8d4c0;"> entry_t </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> t;
+</span><span style="color:#e8d4c0;">    }
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Step on the axis where `tmax` is the smallest */ 
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">            pos.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            t </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            tmax.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">        } </span><span style="color:#db784d;">else </span><span style="color:#e8d4c0;">{
+</span><span style="color:#e8d4c0;">            pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            t </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            tmax.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">        }
+</span><span style="color:#e8d4c0;">    } </span><span style="color:#db784d;">else </span><span style="color:#e8d4c0;">{
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">            pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            t </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            tmax.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">        } </span><span style="color:#db784d;">else </span><span style="color:#e8d4c0;">{
+</span><span style="color:#e8d4c0;">            pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            t </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            tmax.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">        }
+</span><span style="color:#e8d4c0;">    }
+</span><span style="color:#e8d4c0;">}
+</span></pre>
+<p>In this code snippet, we also track <code>t</code> the current time in the grid.<br>
+Because when we hit something, we want to return the time of intersection with whatever we hit.</p>
+<p><em>TODO: Maybe move this section below here UP?</em></p>
+<p>Something else interesting is our <code>entry_t</code> and <code>entry_pos</code>, where are those coming from?<br>
+We can simply obtain those using a basic ray box intersection test.</p>
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#95cc5e;">float </span><span style="color:#60a365;">ray_box_intersect</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> box</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">b</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> ray</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">r</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> tx1 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(b.</span><span style="color:#f8bb39;">min</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> r.</span><span style="color:#f8bb39;">x0</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">)</span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;">r.</span><span style="color:#f8bb39;">n_inv</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> tx2 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(b.</span><span style="color:#f8bb39;">max</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> r.</span><span style="color:#f8bb39;">x0</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">)</span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;">r.</span><span style="color:#f8bb39;">n_inv</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> tmin </span><span style="color:#db784d;">= </span><span style="color:#207241;">min</span><span style="color:#e8d4c0;">(tx1, tx2);
+</span><span style="color:#e8d4c0;">    </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> tmax </span><span style="color:#db784d;">= </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(tx1, tx2);
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> ty1 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(b.</span><span style="color:#f8bb39;">min</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> r.</span><span style="color:#f8bb39;">x0</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">)</span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;">r.</span><span style="color:#f8bb39;">n_inv</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> ty2 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(b.</span><span style="color:#f8bb39;">max</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> r.</span><span style="color:#f8bb39;">x0</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">)</span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;">r.</span><span style="color:#f8bb39;">n_inv</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    tmin </span><span style="color:#db784d;">= </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(tmin, </span><span style="color:#207241;">min</span><span style="color:#e8d4c0;">(ty1, ty2));
+</span><span style="color:#e8d4c0;">    tmax </span><span style="color:#db784d;">= </span><span style="color:#207241;">min</span><span style="color:#e8d4c0;">(tmax, </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(ty1, ty2));
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> tmin </span><span style="color:#db784d;">&amp;&amp;</span><span style="color:#e8d4c0;"> tmin </span><span style="color:#db784d;">&gt; </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">)
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">return</span><span style="color:#e8d4c0;"> tmin;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">else
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1e30f</span><span style="color:#e8d4c0;">; </span><span style="color:#7a7267;">/* miss */
+</span><span style="color:#e8d4c0;">}
+</span></pre>
 
                     </main>
 
