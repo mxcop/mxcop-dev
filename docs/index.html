@@ -4,7 +4,7 @@
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <meta name="theme-color" content="#191919"/>
-        <title>Chapter 1: Amanatides and Woo - MΛX&#x27;s Archive</title>
+        <title>Chapter 1: Amanatides and Woo - MΛX&#x27;s Archives</title>
 
 
         <!-- Custom HTML head -->
@@ -125,7 +125,7 @@
 
                     <h1 class="menu-title gradient-text">
                         <img src="favicon.png">
-                        MΛX&#x27;s Archive
+                        MΛX&#x27;s Archives
                     </h1>
 
                     <div class="right-buttons">
@@ -232,255 +232,50 @@ pre.code-block {
     <p>Traversing through <span class="yellow">grids</span> quickly</p>
 </div>
 <h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
-<p>In this series of articles we're going to be diving into grid / voxel traversal and how to make it faster!<br>
-The algorithm we're talking about is <a href="https://www.researchgate.net/publication/2611491_A_Fast_Voxel_Traversal_Algorithm_for_Ray_Tracing"><em>Amanatides and Woo "A Fast Voxel Traversal Algorithm for Ray Tracing"</em></a></p>
-<p>We will not go into great detail here as to how it exactly works.<br>
-<a href="https://github.com/cgyurgyik/fast-voxel-traversal-algorithm/blob/master/overview/FastVoxelTraversalOverview.md">This page</a> has a good overview of the algorithm and how it works.<br>
-Sometimes we may refer to the traversal algorithm(s) as "DDA" <em>Digital Differential Analyzer</em>.</p>
-<p><em>The basic idea is:</em><br>
-We calculate the maximum distance we can traverse before we pass a grid boundary on each axis <code>tmax</code>.<br>
-The smallest axis of <code>tmax</code> is the axis we should step on next.</p>
-<figure title="Figure A: Visualization of tmax.">
-    <svg class="fig" width="256" viewBox="0 0 130 130">
-        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
-            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
-            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
+<figure title="Figure A: Finding entry cell by truncating">
+    <svg class="fig" width="256" viewBox="0 0 194.5 194.5">
+        <pattern id="grid32" width="32" height="32" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="32" stroke="#342c28" stroke-width="4" />
+            <line x1="0" y1="0" x2="32" y2="0" stroke="#342c28" stroke-width="4" />
         </pattern>
-        <rect x="0" y="0" width="130" height="130" fill="url(#grid)" />
+        <pattern id="grid64" width="64" height="64" patternUnits="userSpaceOnUse">
+            <rect width="64" height="64" fill="url(#grid32)" />
+            <line x1="0" y1="0" x2="0" y2="64" stroke="#3d3a34" stroke-width="5" />
+            <line x1="0" y1="0" x2="64" y2="0" stroke="#3d3a34" stroke-width="5" />
+        </pattern>
+        <rect x="0" y="0" width="194.5" height="194.5" rx="3px" ry="3px" fill="url(#grid64)" />
         <g>
-            <line x1="36" y1="0" x2="82" y2="128" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" stroke-dasharray="6" />
-            <rect x="33" y="65" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <foreignObject x="36" y="67" width="60" height="25" color="var(--fig-error-50)">
-                <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span><span class="mord mathnormal">os</span></span></span></span>
-            </foreignObject>
-        </g>
-        <g visibility="hidden">
-            <foreignObject x="6" y="64" width="60" height="25" color="var(--fig-y90)">
-                <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7651em;vertical-align:-0.15em;"></span><span class="mord mathnormal">t</span><span class="mord mathnormal">ma</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">x</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>
-            </foreignObject>
-            <line x1="59" y1="64" x2="65" y2="80" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
-            <line x1="65" y1="70" x2="65" y2="86" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
-            <set id="tmaxX" attributeName="visibility" to="visible" begin="0;tmaxY.end" dur="4.0s" />
-        </g>
-        <g visibility="hidden">
-            <foreignObject x="72" y="68" width="60" height="25" color="var(--fig-y90)">
-                <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9012em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">t</span><span class="mord mathnormal">ma</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>
-            </foreignObject>
-            <line x1="59" y1="64" x2="70.5" y2="96" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
-            <line x1="66.5" y1="97" x2="74.5" y2="97" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" />
-            <set id="tmaxY" attributeName="visibility" to="visible" begin="tmaxX.end" dur="4.0s" />
-        </g>
-        <g>
-            <line x1="36" y1="0" x2="58" y2="62" stroke="var(--fig-error)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-error)" />
-        </g>
-    </svg>
-</figure>
-<p>As we can see in <em>Figure A</em>, with <code>pos</code> as the current cell,<br>
-the next step should indeed be on the axis where <code>tmax</code> is the smallest.<br>
-Then, we update <code>tmax</code> by adding the reciprocal ray direction to the smallest axis<br>
-and move <code>pos</code> by adding the ray direction sign to the smallest axis of <code>pos</code>.</p>
-<h2 id="the-problem"><a class="header" href="#the-problem">The problem</a></h2>
-<p>During my journey ray tracing voxels on the CPU, the first thing that became apparent to me was<br>
-that all my traversal algorithms were bottlenecked by poor cache utilization.</p>
-<p>Traversing grids is not great for our caches, often causing many many <span class="yellow">cache misses</span>.</p>
-<p>For example, we often store our grids in a 2D/3D array in memory.<br>
-The resulting layout would look something like <em>Figure B</em>.</p>
-<div class="h-group">
-<figure title="Figure B: Typical grid order in memory.">
-    <svg class="fig" width="256" viewBox="0 0 258 258">
-        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
-            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
-            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
-        </pattern>
-        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
-        <g>
-            <defs>
-                <marker id="arrow" viewBox="0 -5 10 10" refX="5" refY="0" markerWidth="4" markerHeight="4" orient="auto">
-                    <path stroke="var(--fig-y90)" fill="var(--fig-y90)" d="M0,-5L10,0L0,5" />
-                </marker>
-            </defs>
-            <line x1="241" y1="17" x2="17" y2="49" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
-            <line x1="241" y1="49" x2="17" y2="81" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
-            <line x1="241" y1="81" x2="17" y2="113" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
-            <line x1="241" y1="113" x2="17" y2="145" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
-            <line x1="241" y1="145" x2="17" y2="177" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
-            <line x1="241" y1="177" x2="17" y2="209" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
-            <line x1="241" y1="209" x2="17" y2="241" stroke="var(--fig-y50)" stroke-width="2" stroke-linecap="round" />
-            <line x1="17" y1="17" x2="241" y2="17" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
-            <line x1="17" y1="49" x2="241" y2="49" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
-            <line x1="17" y1="81" x2="241" y2="81" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
-            <line x1="17" y1="113" x2="241" y2="113" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
-            <line x1="17" y1="145" x2="241" y2="145" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
-            <line x1="17" y1="177" x2="241" y2="177" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
-            <line x1="17" y1="209" x2="241" y2="209" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
-            <line x1="17" y1="241" x2="241" y2="241" stroke="var(--fig-y90)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow)" />
-            <path
-       style="fill:none;stroke:#ffffff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
-       d="M 0,64 64,0 128,64 192,0 256,64 128,192 Z"
-       id="path1" />
+            <path d="m64 81.304 130.5 33.599" fill="#fff" stroke="#7e4d05" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+            <path d="m65.249 194.5 7e-4 -129.25 129.25 0.16817" fill="none" stroke="#fff" stroke-opacity=".53333" stroke-dasharray="12, 12" stroke-dashoffset="21.9" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+            <g stroke-linecap="round" stroke-linejoin="round">
+            <text x="93.092438" y="134.0918" fill="#ffffff" fill-opacity=".53333" font-size="20.05px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" xml:space="preserve"><tspan x="93.092438" y="134.0918" fill="#ffffff" fill-opacity=".53333" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">object</tspan></text>
+            <text x="4.1620638" y="24.12842" fill="#3d3a34" font-size="20.05px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" letter-spacing="-4px" xml:space="preserve"><tspan x="3.1620638" y="24.12842" fill="#3d3a34" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="-4px" stroke-width="3.3416">0,0</tspan></text>
+            <text x="49.56469" y="46.115707" fill="#fed436" fill-opacity="0" font-size="20.05px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416" xml:space="preserve"><tspan x="49.56469" y="46.115707" fill="#fed436" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">entry cell</tspan>
+                <animate
+                    attributeName="fill-opacity"
+                    values="0;0;0;0;1;1;1;0;0;0;0"
+                    dur="10s"
+                    repeatCount="indefinite" />
+            </text>
+            <path d="m0 64 64 17.304" fill="#fff" stroke="#fed436" stroke-width="3"/>
+            </g>
+            <rect x="65.25" y="65.25" width="32" height="32" fill="none" stroke="#fed436" stroke-dashoffset="200" stroke-dasharray="200" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+                <animate
+                    attributeName="stroke-dashoffset"
+                    values="200;200;200;200;0;0;0;200;200;200;200"
+                    dur="10s"
+                    repeatCount="indefinite" />
+            </rect>
+            <circle cx="65.5" cy="65.257" r="6" fill="#fff">
+                <animate
+                    attributeName="cy"
+                    values="81.686;81.686;65.257;65.257;65.257;65.257;81.686;81.686"
+                    dur="10s"
+                    repeatCount="indefinite" />
+            </circle>
         </g>
     </svg>
 </figure>
-<figure title="Figure C: The good and the horrible...">
-    <svg class="fig" width="256" viewBox="0 0 258 258">
-        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
-            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
-            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
-        </pattern>
-        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
-        <g opacity="0">
-            <defs>
-                <marker id="arrow-success" viewBox="0 -5 10 10" refX="5" refY="0" markerWidth="4" markerHeight="4" orient="auto">
-                    <path stroke="var(--fig-success)" fill="var(--fig-success)" d="M0,-5L10,0L0,5" />
-                </marker>
-            </defs>
-            <rect x="1" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="33" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="65" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="97" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="129" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="161" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="193" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="225" y="97" width="32" height="32" fill="none" stroke="var(--fig-success-50)" stroke-width="2.5" stroke-linecap="round" />
-            <line x1="0" y1="109" x2="254" y2="117" stroke="var(--fig-success)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-success)" />
-            <animate id="goodRayEntry" attributeName="opacity" to="5" begin="0;badRayExit.end" dur="5.0s" fill="freeze" />
-            <animate id="goodRayExit" attributeName="opacity" to="0" begin="goodRayEntry.end" dur="5.0s" fill="freeze" />
-        </g>
-        <g opacity="0">
-            <defs>
-                <marker id="arrow-error" viewBox="0 -5 10 10" refX="5" refY="0" markerWidth="4" markerHeight="4" orient="auto">
-                    <path stroke="var(--fig-error)" fill="var(--fig-error)" d="M0,-5L10,0L0,5" />
-                </marker>
-            </defs>
-            <rect x="65" y="1" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="65" y="33" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="97" y="33" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="97" y="65" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="97" y="97" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="129" y="97" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="129" y="129" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="129" y="161" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="129" y="193" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="161" y="193" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="161" y="225" width="32" height="32" fill="none" stroke="var(--fig-error-50)" stroke-width="2.5" stroke-linecap="round" />
-            <line x1="74" y1="0" x2="184" y2="254" stroke="var(--fig-error)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-error)" />
-            <animate id="badRayEntry" attributeName="opacity" to="5" begin="goodRayExit.end" dur="5.0s" fill="freeze" />
-            <animate id="badRayExit" attributeName="opacity" to="0" begin="badRayEntry.end" dur="5.0s" fill="freeze" />
-        </g>
-    </svg>
-</figure>
-</div>
-<p><em>Figure C</em> shows two rays, <strong>green</strong> with a good access pattern, and <strong>red</strong> with a terrible one.<br>
-The <strong>red</strong> ray has to jump all over the 2D/3D array in memory, causing many cache misses.</p>
-<p><em>This effect gets exaggerated as the grid gets larger.</em></p>
-<h2 id="cache-misses"><a class="header" href="#cache-misses">Cache misses?</a></h2>
-<p>Our modern CPUs have multiple levels of cache memory <em>(L1, L2, L3)</em><br>
-I will not go into great detail about it here.<br></p>
-<p><em>However, what we need to know is :</em><br>
-Whenever we fetch some memory, our CPUs will not only fetch exactly what we requested.<br>
-Instead it will fetch a block of memory, called a <span class="yellow">cache line</span> containing our requested memory.<br>
-Which will be placed into our caches, in case we may need anything from that cache line later.<br></p>
-<p>For most modern CPUs a cache line is <code>64 bytes</code> in length and for GPUs its <code>128 bytes</code>.<br>
-Important to note, cache lines are always aligned to their size <em>(64 in most cases)</em><br></p>
-<p>As an example, lets say each cell in our 8x8 grid is <code>8 bytes</code> in size.<br>
-When we read a cell from memory, the cache line would contain <code>8 cells</code> worth of data.</p>
-<figure title="Figure D: CPU Loading a cache line.">
-    <svg class="fig" width="256" viewBox="0 0 258 258">
-        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
-            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
-            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
-        </pattern>
-        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
-        <g>
-            <rect x="161" y="65" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="193" y="65" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="225" y="65" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="129" y="97" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="97" y="97" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="33" y="97" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="1" y="97" width="32" height="32" fill="none" stroke="var(--fig-y50)" stroke-width="2.5" stroke-linecap="round" />
-            <rect x="65" y="97" width="32" height="32" fill="none" stroke="var(--fig-y90)" stroke-width="2.5" stroke-linecap="round" />
-        </g>
-    </svg>
-</figure>
-<p><em>Figure D</em> shows what a cache line <em>may</em> look like in our 8x8 grid.<br>
-<em>(it depends on how our grid is aligned in memory)</em></p>
-<p>This is nice if our next step in the grid is to the right.<br>
-Because those cells are already in our cache now, so we don't need to go back to RAM. <em>(RAM is slow)</em></p>
-<p>However, in a lot of cases we will move up or down instead.<br>
-Because this memory isn't in our cache, we would cause what is called a <span class="yellow">cache miss</span>.<br>
-In most modern programs this is not a problem at all.<br>
-However, it is when we are shooting <span class="yellow">millions of rays</span> per second.</p>
-<h2 id="space-filling-curves"><a class="header" href="#space-filling-curves">Space filling curves</a></h2>
-<p>We can change the layout of the grid in memory.<br>
-Space filling curves are a great option that let us improve the <span class="yellow">spatial locality</span> of our grids.<br>
-<em>Basically</em>, cells close to each other in space, are also close to each other in memory.</p>
-<div class="h-group">
-<figure title="Figure E: Morton curve.">
-    <svg class="fig" width="256" viewBox="0 0 258 258">
-        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
-            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
-            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
-        </pattern>
-        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
-        <svg width="256" viewBox="20 299 222 222">
-            <polyline fill="none" points="229.333,507.112 201.556,507.112 229.333,479.333   201.556,479.333 173.778,507.112 146,507.112 173.778,479.333 146,479.333 229.333,451.555 201.556,451.555 229.333,423.778   201.556,423.778 173.778,451.555 146,451.555 173.778,423.778 146,423.778 118.223,507.112 90.444,507.112 118.223,479.333   90.444,479.333 62.667,507.112 34.889,507.112 62.667,479.333 34.889,479.333 118.223,451.555 90.444,451.555 118.223,423.778   90.444,423.778 62.667,451.555 34.889,451.555 62.667,423.778 34.889,423.778 229.333,396 201.556,396 229.333,368.223   201.556,368.223 173.778,396 146,396 173.778,368.223 146,368.223 229.333,340.444 201.556,340.444 229.333,312.667   201.556,312.667 173.778,340.444 146,340.444 173.778,312.667 146,312.667 118.223,396 90.444,396 118.223,368.223 90.444,368.223   62.667,396 34.889,396 62.667,368.223 34.889,368.223 118.223,340.444 90.444,340.444 118.223,312.667 90.444,312.667   62.667,340.444 34.889,340.444 62.667,312.667 34.889,312.667  " stroke="var(--fig-y90)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-    </svg>
-</figure>
-<figure title="Figure F: Hilbert curve.">
-    <svg class="fig" width="256" viewBox="0 0 258 258">
-        <pattern id="grid" patternUnits="userSpaceOnUse" width="32" height="32">
-            <line x1="0" y1="0" x2="0" y2="32" stroke="var(--fig-w20)" stroke-width="5" />
-            <line x1="0" y1="0" x2="32" y2="0" stroke="var(--fig-w20)" stroke-width="5" />
-        </pattern>
-        <rect x="0" y="0" width="258" height="258" fill="url(#grid)" />
-        <svg width="256" viewBox="0 0 512 512">
-            <path xmlns="http://www.w3.org/2000/svg" d="M32,32v64h64v-64h64h64v64h-64v64h64v64h-64h-64v-64h-64v64v64h64v64h-64v64v64h64v-64h64v64h64v-64v-64h-64v-64h64h64h64v64h-64v64v64h64v-64h64v64h64v-64v-64h-64v-64h64v-64v-64h-64v64h-64h-64v-64h64v-64h-64v-64h64h64v64h64v-64" fill="none" stroke="var(--fig-y90)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-    </svg>
-</figure>
-</div>
-<p><em>Figure E &amp; F</em> show two beautiful space filling curves. <em>(these also extend into 3D)</em><br>
-When we fetch a cell in these new grids, the cache line will contain much more useful additional cells.<br></p>
-<p>The computation required to encode a 2D/3D coordinate onto a Hilbert curve is rather large.<br>
-However it turns out that the Morton encoding is <em>cheap enough</em> to make its use viable.</p>
-<pre class="code-block" style="background-color:#191919;">
-<span style="color:#7a7267;">/* Encode 3D coordinate as a morton code. */
-</span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> u64 </span><span style="color:#60a365;">morton_encode</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">x</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">y</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_X_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x9249249249249249</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_Y_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x2492492492492492</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_3D_Z_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x4924924924924924</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(x, BMI_3D_X_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(y, BMI_3D_Y_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(z, BMI_3D_Z_MASK);
-</span><span style="color:#e8d4c0;">}
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#7a7267;">/* Encode 2D coordinate as a morton code. */
-</span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> u64 </span><span style="color:#60a365;">morton_encode</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">x</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> u64 </span><span style="font-style:italic;color:#f8bb39;">y</span><span style="color:#e8d4c0;">) {
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_2D_X_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0x5555555555555555</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">constexpr</span><span style="color:#e8d4c0;"> u64 BMI_2D_Y_MASK </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0xAAAAAAAAAAAAAAAA</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(x, BMI_2D_X_MASK) </span><span style="color:#db784d;">| </span><span style="color:#207241;">_pdep_u64</span><span style="color:#e8d4c0;">(y, BMI_2D_Y_MASK);
-</span><span style="color:#e8d4c0;">}
-</span></pre>
-<p><sup>Snippet A.</sup></p>
-<p>To encode a 2D/3D coordinate onto a Morton curve, we can use the <code>pdep</code> instruction on x86.<br>
-<em>Snippet A</em> shows how we can do this in C++.<br>
-This is nice and fast, because it only requires a few instructions.</p>
-<p><em>So? What are your gains you may be wondering.</em><br>
-For me it was a bit inconsistent, however it did consistently reduce my frametimes, albeit <span class="yellow">not by much</span>.<br>
-I recon this is because of the extra cost of encoding the coordinates each step.</p>
-<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
-<p>Space filling curves tend to have some constraints.<br>
-For example in the case of our Morton curve, it only works in <span class="yellow">powers of 2</span>.<br>
-So our grid has to be <code>2x2, 4x4, 8x8, 16x16, 32x32, 64x64, ...</code>. <em>(the same goes for 3D)</em></p>
-<p>Furthermore, with a Morton curve our grid <strong>MUST</strong> be a <span class="yellow">perfect cube</span>.<br>
-As in, all sides must be of the same length.</p>
-<h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
-<p>So, We've looked at the main bottleneck of DDA and a way to make it slightly faster.<br></p>
-<p><em>What's next?</em><br>
-There are plenty of other ways to make our grid traversal faster.<br>
-We will be going into 2 algorithms in the following chapters that do just that.<br></p>
 
                     </main>
 
