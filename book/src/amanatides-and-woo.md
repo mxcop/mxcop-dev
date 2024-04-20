@@ -436,6 +436,7 @@ add only the positive part of our `step`, and finally divide by the ray directio
 const vec3 voxels_per_unit = (grid_max - grid_min) * GRID_SIDE;
 
 /* Get the floating grid entry position */
+/* `0.0001f` is to slightly nudge the point inside the grid */
 const vec3 entry_pos = ((ro + rd * (entry_t + 0.0001f)) - grid_min) * voxels_per_unit;
 
 /* Initialize the time along the ray when each axis crosses its next cell boundary */

@@ -635,6 +635,7 @@ add only the positive part of our <code>step</code>, and finally divide by the r
 </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 voxels_per_unit </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(grid_max </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> grid_min) </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE;
 </span><span style="color:#e8d4c0;">
 </span><span style="color:#7a7267;">/* Get the floating grid entry position */
+</span><span style="color:#7a7267;">/* `0.0001f` is to slightly nudge the point inside the grid */
 </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 entry_pos </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">((ro </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> rd </span><span style="color:#db784d;">* </span><span style="color:#e8d4c0;">(entry_t </span><span style="color:#db784d;">+ </span><span style="color:#eaae2e;">0.0001f</span><span style="color:#e8d4c0;">)) </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> grid_min) </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> voxels_per_unit;
 </span><span style="color:#e8d4c0;">
 </span><span style="color:#7a7267;">/* Initialize the time along the ray when each axis crosses its next cell boundary */
