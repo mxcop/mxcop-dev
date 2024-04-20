@@ -532,10 +532,10 @@ float VoxelTracer::find_nearest(const vec3& ro, const vec3& rd) const {
     const vec3 delta = fabs(1.0f / rd);
 
     /* IMPORTANT: Safety clamp the entry point inside the grid */
-    vec3 pos = clamp(floorf(entry_pos), 0, GRID_SIDE);
+    vec3 pos = clamp(floor(entry_pos), 0, GRID_SIDE);
 
     /* Initialize the time along the ray when each axis crosses its next cell boundary */
-    vec3 tmax = (pos - entry_pos + fmaxf(step, 0)) / rd;
+    vec3 tmax = (pos - entry_pos + max(step, 0)) / rd;
 
     /* The traversal loop */
     int axis = 0;
