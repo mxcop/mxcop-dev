@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Voxel & Grid Traversal Deep Dive</li><li class="chapter-item expanded "><a href="amanatides-and-woo.html" class="active"><strong aria-hidden="true">1.</strong> Chapter 1: Amanatides and Woo</a></li><li class="chapter-item expanded "><a href="dda-memory.html"><strong aria-hidden="true">2.</strong> Chapter 2: Memory Bottleneck</a></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">3.</strong> Chapter 3: Multi-resolution Traversal</a></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">4.</strong> Chapter 4: Coherent Grid Traversal</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Voxel & Grid Traversal Deep Dive</li><li class="chapter-item expanded "><a href="amanatides-and-woo.html" class="active"><strong aria-hidden="true">1.</strong> Chapter 1: Amanatides and Woo</a></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">2.</strong> Chapter 2: Multi-resolution Traversal</a></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">3.</strong> Chapter 3: Coherent Grid Traversal</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -261,11 +261,16 @@ Let's setup a little <code>VoxelTracer</code> class together:</p>
 </span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Grid voxel data. */
 </span><span style="color:#e8d4c0;">    </span><span style="color:#95cc5e;">unsigned int</span><span style="color:#e8d4c0;"> grid[GRID_SIZE];
 </span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Grid position in world space. (x, y, z) */
-</span><span style="color:#e8d4c0;">    vec3 grid_origin;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Grid minimum and maximum point in world space. (x, y, z) */
+</span><span style="color:#e8d4c0;">    vec3 grid_min, grid_max;
 </span><span style="color:#e8d4c0;">
 </span><span style="color:#e8d4c0;">  </span><span style="color:#db784d;">public</span><span style="color:#e8d4c0;">:
-</span><span style="color:#e8d4c0;">    </span><span style="color:#60a365;">VoxelTracer</span><span style="color:#e8d4c0;">() { </span><span style="color:#7a7267;">/* TODO: fill `grid` with data */ </span><span style="color:#e8d4c0;">}
+</span><span style="color:#e8d4c0;">    </span><span style="color:#60a365;">VoxelTracer</span><span style="color:#e8d4c0;">() { 
+</span><span style="color:#e8d4c0;">        grid_min </span><span style="color:#db784d;">= </span><span style="color:#207241;">vec3</span><span style="color:#e8d4c0;">(</span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">, </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">, </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">);
+</span><span style="color:#e8d4c0;">        grid_max </span><span style="color:#db784d;">= </span><span style="color:#207241;">vec3</span><span style="color:#e8d4c0;">(</span><span style="color:#eaae2e;">1</span><span style="color:#e8d4c0;">, </span><span style="color:#eaae2e;">1</span><span style="color:#e8d4c0;">, </span><span style="color:#eaae2e;">1</span><span style="color:#e8d4c0;">);
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">        </span><span style="color:#7a7267;">/* TODO: fill `grid` with data */
+</span><span style="color:#e8d4c0;">    }
 </span><span style="color:#e8d4c0;">
 </span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/**
 </span><span style="color:#7a7267;">     * @brief Find the nearest intersection with the grid.
@@ -275,8 +280,59 @@ Let's setup a little <code>VoxelTracer</code> class together:</p>
 </span><span style="color:#e8d4c0;">};
 </span></pre>
 <p>What to fill <code>grid</code> with is up to you.<br>
-Each voxel in the grid is stored as a color <code>int</code>, RGBA.<br>
-For some inspiration: you could fill it with a noise pattern, like Perlin noise.</p>
+Each voxel in the grid is stored as a color <code>unsigned int</code>, RGBA.</p>
+<blockquote>
+<p>For some inspiration: you could fill it with a noise pattern, like Perlin noise.</p>
+</blockquote>
+<p>Futhermore, before we start the traversal we need to <span class="yellow">intersect</span> our ray with the <span class="yellow">grid bounding box</span>.<br>
+If our ray <strong>doesn't</strong> intersect the grid then we don't need to traverse it.<br>
+If our ray <strong>does</strong> intersect we will also get the time along the ray where it enters the grid called <code>entry_t</code>.</p>
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#7a7267;">/**
+</span><span style="color:#7a7267;"> * @brief Ray vs AABB intersection test. (can be optimized further)
+</span><span style="color:#7a7267;"> * @return Ray entry time, `1e30f` if no intersection was found.
+</span><span style="color:#7a7267;"> */
+</span><span style="color:#95cc5e;">float </span><span style="color:#60a365;">ray_aabb</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">min</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">max</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">ro</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">rd</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">    </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> tmin </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">, tmax </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">1e30f</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Loop will be unrolled */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">for </span><span style="color:#e8d4c0;">(</span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">; axis </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">3</span><span style="color:#e8d4c0;">; </span><span style="color:#db784d;">++</span><span style="color:#e8d4c0;">axis) {
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> t1 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(min[axis] </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> ro[axis]) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd[axis];
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> t2 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(max[axis] </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> ro[axis]) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd[axis];
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> dmin </span><span style="color:#db784d;">= </span><span style="color:#207241;">min</span><span style="color:#e8d4c0;">(t1, t2);
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> dmax </span><span style="color:#db784d;">= </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(t1, t2);
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">        tmin </span><span style="color:#db784d;">= </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(dmin, tmin);
+</span><span style="color:#e8d4c0;">        tmax </span><span style="color:#db784d;">= </span><span style="color:#207241;">min</span><span style="color:#e8d4c0;">(dmax, tmax);
+</span><span style="color:#e8d4c0;">    }
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> tmin) </span><span style="color:#db784d;">return</span><span style="color:#e8d4c0;"> tmin;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1e30f</span><span style="color:#e8d4c0;">; </span><span style="color:#7a7267;">/* miss */
+</span><span style="color:#e8d4c0;">}
+</span></pre>
+<p><sup>Snippet A.</sup></p>
+<p><em>Snippet A</em> shows a basic <span class="yellow">ray vs aabb</span> intersection test you can use.<br>
+It is not an optimal one, nevertheless it will get the job done for now.</p>
+<p>We can now put this intersection test at the top of our <code>find_nearest</code> function.<br>
+And for now, we can just return <code>entry_t</code> if there was a hit.</p>
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#95cc5e;">float </span><span style="color:#60a365;">VoxelTracer::find_nearest</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">ro</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">rd</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">const </span><span style="color:#e8d4c0;">{
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Find the ray entry point */ 
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> entry_t </span><span style="color:#db784d;">= </span><span style="color:#207241;">ray_aabb</span><span style="color:#e8d4c0;">(grid_min, grid_max, ro, rd);
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(entry_t </span><span style="color:#db784d;">== </span><span style="color:#eaae2e;">1e30f</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1e30f</span><span style="color:#e8d4c0;">; </span><span style="color:#7a7267;">/* miss */
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* TODO: voxel traversal */
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return</span><span style="color:#e8d4c0;"> entry_t; </span><span style="color:#7a7267;">/* hit */
+</span><span style="color:#e8d4c0;">}
+</span></pre>
+<p>If we shoot a ray for each pixel on screen, and turn the output of <code>find_nearest</code> into a grayscale color.<br>
+We should get something that looks like this:</p>
+<figure title="Testing our ray vs aabb intersection">
+<img class="fig" src="./assets/images/ray-vs-aabb-test.png" width="256">
+</figure>
 <h2 id="traversal-concept"><a class="header" href="#traversal-concept">Traversal Concept</a></h2>
 <p>The concept of <span class="yellow">Amanatides and Woo's</span> algorithm is simple:<br>
 We find at what time along the ray each axis crosses its next cell boundary.<br>
@@ -386,7 +442,7 @@ Then on the <span class="yellow">2nd</span> step, <code>tmax.x</code> was update
 <p>Now the question is <em>"How do we calculate <code>tmax</code>?"</em>.<br>
 That's what we're going to find out next.</p>
 <h2 id="traversal-setup"><a class="header" href="#traversal-setup">Traversal Setup</a></h2>
-<p>Now that we have some data to traverse, and we understand the basic concept, we can start implementing the algorithm.<br>
+<p>Now that we have our <code>VoxelTracer</code>, and we understand the basic concept, we can start implementing the algorithm.<br>
 Let's start with 2 important variables which will <span class="yellow">remain constant</span> during traversal:</p>
 <div class="h-group">
 <figure title="Figure B: Step (direction signs)">
@@ -469,7 +525,7 @@ Computed for each axis, if the ray direction axis is <strong>positive</strong> i
 Here's what that would look like in C++:</p>
 <pre class="code-block" style="background-color:#191919;">
 <span style="color:#7a7267;">/** @brief Get the sign of a float (-1 or 1) */
-</span><span style="color:#db784d;">inline </span><span style="color:#95cc5e;">float </span><span style="color:#60a365;">getsign</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float </span><span style="font-style:italic;color:#f8bb39;">f</span><span style="color:#e8d4c0;">) { </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1 </span><span style="color:#db784d;">- </span><span style="color:#e8d4c0;">(((</span><span style="color:#95cc5e;">unsigned int</span><span style="color:#db784d;">&amp;</span><span style="color:#e8d4c0;">)f) </span><span style="color:#db784d;">&gt;&gt; </span><span style="color:#eaae2e;">31</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">* </span><span style="color:#eaae2e;">2</span><span style="color:#e8d4c0;">; }
+</span><span style="color:#db784d;">inline </span><span style="color:#95cc5e;">int </span><span style="color:#60a365;">getsign</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float </span><span style="font-style:italic;color:#f8bb39;">f</span><span style="color:#e8d4c0;">) { </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1 </span><span style="color:#db784d;">- </span><span style="color:#e8d4c0;">(</span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;">)(((</span><span style="color:#95cc5e;">unsigned int</span><span style="color:#db784d;">&amp;</span><span style="color:#e8d4c0;">)f) </span><span style="color:#db784d;">&gt;&gt; </span><span style="color:#eaae2e;">31</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">* </span><span style="color:#eaae2e;">2</span><span style="color:#e8d4c0;">; }
 </span><span style="color:#e8d4c0;">
 </span><span style="color:#7a7267;">/** @brief Get the signs of a 3D vector (-1 or 1) */
 </span><span style="color:#db784d;">inline</span><span style="color:#e8d4c0;"> vec3 </span><span style="color:#60a365;">sign_of_dir</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">v</span><span style="color:#e8d4c0;">) {
@@ -572,7 +628,13 @@ And then we truncate the floating entry point to get our entry grid position as 
 To initialize it, we get the offset between the grid <code>pos</code> and the entry point,<br>
 add only the positive part of our <code>step</code>, and finally divide by the ray direction <code>rd</code>.</p>
 <pre class="code-block" style="background-color:#191919;">
-<span style="color:#7a7267;">/* Initialize the time along the ray when each axis crosses its next cell boundary. */
+<span style="color:#7a7267;">/* Compute how many voxels occupy a unit in world space */
+</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 voxels_per_unit </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(grid_max </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> grid_min) </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#7a7267;">/* Get the floating grid entry position */
+</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 entry_pos </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">((ro </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> rd </span><span style="color:#db784d;">* </span><span style="color:#e8d4c0;">(entry_t </span><span style="color:#db784d;">+ </span><span style="color:#eaae2e;">0.0001f</span><span style="color:#e8d4c0;">)) </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> grid_min) </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> voxels_per_unit;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#7a7267;">/* Initialize the time along the ray when each axis crosses its next cell boundary */
 </span><span style="color:#e8d4c0;">vec3 tmax </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(pos </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> entry_pos </span><span style="color:#db784d;">+ </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(step, </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">)) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd;
 </span></pre>
 <p>Adding only the positive part of our <code>step</code> is important because each grid cells origin lies in its top left.<br>
@@ -582,95 +644,147 @@ while in the negative direction it is already correct.</p>
 This is important because later we will be updating <code>tmax</code> using our <code>delta</code>.</p>
 <p><strong>Finally!</strong> We have everything setup, and we're ready to start traversing!</p>
 <h2 id="traversal"><a class="header" href="#traversal">Traversal</a></h2>
-<p><em>Explain the traversal algorithm, with code examples.</em></p>
-<p>Now that everything is already setup for us, we get to the easiest part, the actual traversal.<br>
+<p>Now that everything is already setup for us, we get to the easiest part, the <span class="yellow">actual traversal</span>.<br>
 As I mentioned in the <em>Concept</em> part of the article, we will simply step based on the smallest axis of <code>tmax</code>.<br>
 And after every step, we update our <code>pos</code> and <code>tmax</code>.</p>
 <pre class="code-block" style="background-color:#191919;">
-<span style="color:#db784d;">constexpr </span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> MAX_STEPS </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">64</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#7a7267;">/* Get our traversal constants */
-</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 step </span><span style="color:#db784d;">= </span><span style="color:#207241;">sign_of_dir</span><span style="color:#e8d4c0;">(rd);
-</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 delta </span><span style="color:#db784d;">= </span><span style="color:#95cc5e;">abs</span><span style="color:#e8d4c0;">(</span><span style="color:#eaae2e;">1.0f </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd);
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#7a7267;">/* IMPORTANT: Clamp the entry point inside the grid */
-</span><span style="color:#e8d4c0;">vec3 pos </span><span style="color:#db784d;">= </span><span style="color:#207241;">clamp</span><span style="color:#e8d4c0;">(</span><span style="color:#95cc5e;">floor</span><span style="color:#e8d4c0;">(entry_pos), </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">, GRID_SIDE);
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#7a7267;">/* Initialize the time along the ray when each axis crosses its next cell boundary. */
-</span><span style="color:#e8d4c0;">vec3 tmax </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(pos </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> entry_pos </span><span style="color:#db784d;">+ </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(step, </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">)) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd;
-</span><span style="color:#e8d4c0;">
-</span><span style="color:#7a7267;">/* The traversal loop */
-</span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> t </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">;
-</span><span style="color:#db784d;">for </span><span style="color:#e8d4c0;">(</span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> steps </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">; steps </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> MAX_STEPS; </span><span style="color:#db784d;">++</span><span style="color:#e8d4c0;">steps) {
+<span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">;
+</span><span style="color:#db784d;">for </span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">...</span><span style="color:#e8d4c0;">) {
 </span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Fetch the cell at our current position */
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">unsigned int</span><span style="color:#e8d4c0;"> voxel </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> grid[pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIZE </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">];
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> i </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">unsigned int</span><span style="color:#e8d4c0;"> voxel </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> grid[i];
 </span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Check if we hit a voxel which isn&#39;t 0 */ 
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Check if we hit a voxel which isn&#39;t 0 */
 </span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(voxel) {
 </span><span style="color:#e8d4c0;">        </span><span style="color:#7a7267;">/* Return the time of intersection! */
-</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">return</span><span style="color:#e8d4c0;"> entry_t </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> t;
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">return</span><span style="color:#e8d4c0;"> entry_t </span><span style="color:#db784d;">+ </span><span style="color:#e8d4c0;">(tmax[axis] </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> delta[axis]) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> voxels_per_unit[axis];
 </span><span style="color:#e8d4c0;">    }
 </span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Step on the axis where `tmax` is the smallest */ 
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Step on the axis where `tmax` is the smallest */
 </span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">) {
 </span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
 </span><span style="color:#e8d4c0;">            pos.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">            t </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">            tmax.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">        } </span><span style="color:#db784d;">else </span><span style="color:#e8d4c0;">{
 </span><span style="color:#e8d4c0;">            pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">            t </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">2</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">            tmax.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">        }
 </span><span style="color:#e8d4c0;">    } </span><span style="color:#db784d;">else </span><span style="color:#e8d4c0;">{
 </span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
 </span><span style="color:#e8d4c0;">            pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">            t </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">1</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">            tmax.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">        } </span><span style="color:#db784d;">else </span><span style="color:#e8d4c0;">{
 </span><span style="color:#e8d4c0;">            pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">            t </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">2</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">            tmax.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">        }
 </span><span style="color:#e8d4c0;">    }
 </span><span style="color:#e8d4c0;">}
 </span></pre>
-<p>In this code snippet, we also track <code>t</code> the current time in the grid.<br>
-Because when we hit something, we want to return the time of intersection with whatever we hit.</p>
-<p><em>TODO: Maybe move this section below here UP?</em></p>
-<p>Something else interesting is our <code>entry_t</code> and <code>entry_pos</code>, where are those coming from?<br>
-We can simply obtain those using a basic ray box intersection test.</p>
+<p><sup>Snippet B.</sup></p>
+<p>In <em>Snippet B</em>, we also track <code>axis</code>, the previous axis we stepped on.<br>
+Because when we hit something, we want to return the <span class="yellow">time of intersection</span> with whatever we hit.<br>
+Which is the previous <code>tmax</code> along the previously stepped <code>axis</code>.</p>
 <pre class="code-block" style="background-color:#191919;">
-<span style="color:#95cc5e;">float </span><span style="color:#60a365;">ray_box_intersect</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> box</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">b</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> ray</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">r</span><span style="color:#e8d4c0;">) {
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> tx1 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(b.</span><span style="color:#f8bb39;">min</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> r.</span><span style="color:#f8bb39;">x0</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">)</span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;">r.</span><span style="color:#f8bb39;">n_inv</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> tx2 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(b.</span><span style="color:#f8bb39;">max</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> r.</span><span style="color:#f8bb39;">x0</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">)</span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;">r.</span><span style="color:#f8bb39;">n_inv</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+<span style="color:#e8d4c0;">entry_t </span><span style="color:#db784d;">+ </span><span style="color:#e8d4c0;">(tmax[axis] </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> delta[axis]) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> voxels_per_unit[axis]
+</span></pre>
+<p>And that's it, that's the entire algorithm implemented and <span class="yellow">ready to go</span>!</p>
+<h2 id="all-together-now"><a class="header" href="#all-together-now">All Together Now!</a></h2>
+<p>Now with everything put together, the final <code>find_nearest</code> function looks like this:</p>
+<pre class="code-block" style="background-color:#191919;">
+<span style="color:#db784d;">constexpr </span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> MAX_STEPS </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">128</span><span style="color:#e8d4c0;">;
 </span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> tmin </span><span style="color:#db784d;">= </span><span style="color:#207241;">min</span><span style="color:#e8d4c0;">(tx1, tx2);
-</span><span style="color:#e8d4c0;">    </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> tmax </span><span style="color:#db784d;">= </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(tx1, tx2);
+</span><span style="color:#95cc5e;">float </span><span style="color:#60a365;">VoxelTracer::find_nearest</span><span style="color:#e8d4c0;">(</span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">ro</span><span style="color:#e8d4c0;">, </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3</span><span style="color:#db784d;">&amp; </span><span style="font-style:italic;color:#f8bb39;">rd</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">const </span><span style="color:#e8d4c0;">{ 
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Find the ray entry point */ 
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> entry_t </span><span style="color:#db784d;">= </span><span style="color:#207241;">ray_aabb</span><span style="color:#e8d4c0;">(grid_min, grid_max, ro, rd);
 </span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> ty1 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(b.</span><span style="color:#f8bb39;">min</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> r.</span><span style="color:#f8bb39;">x0</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">)</span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;">r.</span><span style="color:#f8bb39;">n_inv</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">float</span><span style="color:#e8d4c0;"> ty2 </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(b.</span><span style="color:#f8bb39;">max</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> r.</span><span style="color:#f8bb39;">x0</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">)</span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;">r.</span><span style="color:#f8bb39;">n_inv</span><span style="color:#e8d4c0;">.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(entry_t </span><span style="color:#db784d;">== </span><span style="color:#eaae2e;">1e30f</span><span style="color:#e8d4c0;">) </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1e30f</span><span style="color:#e8d4c0;">; </span><span style="color:#7a7267;">/* miss */
 </span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    tmin </span><span style="color:#db784d;">= </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(tmin, </span><span style="color:#207241;">min</span><span style="color:#e8d4c0;">(ty1, ty2));
-</span><span style="color:#e8d4c0;">    tmax </span><span style="color:#db784d;">= </span><span style="color:#207241;">min</span><span style="color:#e8d4c0;">(tmax, </span><span style="color:#207241;">max</span><span style="color:#e8d4c0;">(ty1, ty2));
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Compute how many voxels occupy a unit in world space */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 voxels_per_unit </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(grid_max </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> grid_min) </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE;
 </span><span style="color:#e8d4c0;">
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> tmin </span><span style="color:#db784d;">&amp;&amp;</span><span style="color:#e8d4c0;"> tmin </span><span style="color:#db784d;">&gt; </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">)
-</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">return</span><span style="color:#e8d4c0;"> tmin;
-</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">else
-</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1e30f</span><span style="color:#e8d4c0;">; </span><span style="color:#7a7267;">/* miss */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Get the floating grid entry position */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* `0.0001f` is to slightly nudge the point inside the grid */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 entry_pos </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">((ro </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> rd </span><span style="color:#db784d;">* </span><span style="color:#e8d4c0;">(entry_t </span><span style="color:#db784d;">+ </span><span style="color:#eaae2e;">0.0001f</span><span style="color:#e8d4c0;">)) </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> grid_min) </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> voxels_per_unit;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Get our traversal constants */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 step </span><span style="color:#db784d;">= </span><span style="color:#207241;">sign_of_dir</span><span style="color:#e8d4c0;">(rd);
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">const</span><span style="color:#e8d4c0;"> vec3 delta </span><span style="color:#db784d;">= </span><span style="color:#95cc5e;">fabs</span><span style="color:#e8d4c0;">(</span><span style="color:#eaae2e;">1.0f </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd);
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* IMPORTANT: Safety clamp the entry point inside the grid */
+</span><span style="color:#e8d4c0;">    vec3 pos </span><span style="color:#db784d;">= </span><span style="color:#207241;">clamp</span><span style="color:#e8d4c0;">(</span><span style="color:#95cc5e;">floorf</span><span style="color:#e8d4c0;">(entry_pos), </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">, GRID_SIDE);
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* Initialize the time along the ray when each axis crosses its next cell boundary */
+</span><span style="color:#e8d4c0;">    vec3 tmax </span><span style="color:#db784d;">= </span><span style="color:#e8d4c0;">(pos </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> entry_pos </span><span style="color:#db784d;">+ </span><span style="color:#95cc5e;">fmaxf</span><span style="color:#e8d4c0;">(step, </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">)) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> rd;
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#7a7267;">/* The traversal loop */
+</span><span style="color:#e8d4c0;">    </span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">for </span><span style="color:#e8d4c0;">(</span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> steps </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">; steps </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> MAX_STEPS; </span><span style="color:#db784d;">++</span><span style="color:#e8d4c0;">steps) {
+</span><span style="color:#e8d4c0;">        </span><span style="color:#7a7267;">/* Fetch the cell at our current position */
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">int</span><span style="color:#e8d4c0;"> i </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">*</span><span style="color:#e8d4c0;"> GRID_SIDE </span><span style="color:#db784d;">+</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">const </span><span style="color:#95cc5e;">unsigned int</span><span style="color:#e8d4c0;"> voxel </span><span style="color:#db784d;">=</span><span style="color:#e8d4c0;"> grid[i];
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">        </span><span style="color:#7a7267;">/* Check if we hit a voxel which isn&#39;t 0 */
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(voxel) {
+</span><span style="color:#e8d4c0;">            </span><span style="color:#7a7267;">/* Return the time of intersection! */
+</span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">return</span><span style="color:#e8d4c0;"> entry_t </span><span style="color:#db784d;">+ </span><span style="color:#e8d4c0;">(tmax[axis] </span><span style="color:#db784d;">-</span><span style="color:#e8d4c0;"> delta[axis]) </span><span style="color:#db784d;">/</span><span style="color:#e8d4c0;"> voxels_per_unit[axis];
+</span><span style="color:#e8d4c0;">        }
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">        </span><span style="color:#7a7267;">/* Step on the axis where `tmax` is the smallest */
+</span><span style="color:#e8d4c0;">        </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">                pos.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">0</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                tmax.</span><span style="color:#f8bb39;">x </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">x</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            } </span><span style="color:#db784d;">else </span><span style="color:#e8d4c0;">{
+</span><span style="color:#e8d4c0;">                pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">2</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                tmax.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            }
+</span><span style="color:#e8d4c0;">        } </span><span style="color:#db784d;">else </span><span style="color:#e8d4c0;">{
+</span><span style="color:#e8d4c0;">            </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(tmax.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">&lt;</span><span style="color:#e8d4c0;"> tmax.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">) {
+</span><span style="color:#e8d4c0;">                pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">1</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                tmax.</span><span style="color:#f8bb39;">y </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">y</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            } </span><span style="color:#db784d;">else </span><span style="color:#e8d4c0;">{
+</span><span style="color:#e8d4c0;">                pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> step.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                </span><span style="color:#db784d;">if </span><span style="color:#e8d4c0;">(pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&lt; </span><span style="color:#eaae2e;">0 </span><span style="color:#db784d;">||</span><span style="color:#e8d4c0;"> pos.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">&gt;=</span><span style="color:#e8d4c0;"> GRID_SIDE) </span><span style="color:#db784d;">break</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                axis </span><span style="color:#db784d;">= </span><span style="color:#eaae2e;">2</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">                tmax.</span><span style="color:#f8bb39;">z </span><span style="color:#db784d;">+=</span><span style="color:#e8d4c0;"> delta.</span><span style="color:#f8bb39;">z</span><span style="color:#e8d4c0;">;
+</span><span style="color:#e8d4c0;">            }
+</span><span style="color:#e8d4c0;">        }
+</span><span style="color:#e8d4c0;">    }
+</span><span style="color:#e8d4c0;">
+</span><span style="color:#e8d4c0;">    </span><span style="color:#db784d;">return </span><span style="color:#eaae2e;">1e30f</span><span style="color:#e8d4c0;">; </span><span style="color:#7a7267;">/* miss */
 </span><span style="color:#e8d4c0;">}
 </span></pre>
+<p>And when we once again shoot a ray for each pixel into the scene.<br>
+We get to finally see some <span class="yellow">voxels on screen</span>!</p>
+<figure title="Voxel ray tracing">
+<img class="fig" src="./assets/images/voxel-traversal.png" width="256">
+</figure>
+<h2 id="wrapping-up"><a class="header" href="#wrapping-up">Wrapping Up</a></h2>
+<p><span class="yellow">Thank you</span> for reading all the way to the end, I hope you now have a better understanding of the algorithm.<br>
+And I hope you enjoyed reading this article.</p>
+<p>If you have anymore questions, or you found something incorrect in the article, let <a href="https://twitter.com/mxacop">me</a> know on Twitter (X).<br>
+<em>Also feel free to send me pictures of your voxel traversal working! :)</em></p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
 
-                            <a rel="next prefetch" href="dda-memory.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="todo.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 

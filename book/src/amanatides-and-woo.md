@@ -40,11 +40,16 @@ class VoxelTracer {
     /* Grid voxel data. */
     unsigned int grid[GRID_SIZE];
 
-    /* Grid position in world space. (x, y, z) */
-    vec3 grid_origin;
+    /* Grid minimum and maximum point in world space. (x, y, z) */
+    vec3 grid_min, grid_max;
 
   public:
-    VoxelTracer() { /* TODO: fill `grid` with data */ }
+    VoxelTracer() { 
+        grid_min = vec3(0, 0, 0);
+        grid_max = vec3(1, 1, 1);
+
+        /* TODO: fill `grid` with data */
+    }
 
     /**
      * @brief Find the nearest intersection with the grid.
@@ -55,8 +60,65 @@ class VoxelTracer {
 ```
 
 What to fill `grid` with is up to you.<br>
-Each voxel in the grid is stored as a color `int`, RGBA.<br>
-For some inspiration: you could fill it with a noise pattern, like Perlin noise.
+Each voxel in the grid is stored as a color `unsigned int`, RGBA.
+
+> For some inspiration: you could fill it with a noise pattern, like Perlin noise.
+
+Futhermore, before we start the traversal we need to <span class="yellow">intersect</span> our ray with the <span class="yellow">grid bounding box</span>.<br>
+If our ray **doesn't** intersect the grid then we don't need to traverse it.<br>
+If our ray **does** intersect we will also get the time along the ray where it enters the grid called `entry_t`.
+
+```cpp
+/**
+ * @brief Ray vs AABB intersection test. (can be optimized further)
+ * @return Ray entry time, `1e30f` if no intersection was found.
+ */
+float ray_aabb(const vec3& min, const vec3& max, const vec3& ro, const vec3& rd) {
+    float tmin = 0, tmax = 1e30f;
+
+    /* Loop will be unrolled */
+    for (int axis = 0; axis < 3; ++axis) {
+        const float t1 = (min[axis] - ro[axis]) / rd[axis];
+        const float t2 = (max[axis] - ro[axis]) / rd[axis];
+
+        const float dmin = min(t1, t2);
+        const float dmax = max(t1, t2);
+
+        tmin = max(dmin, tmin);
+        tmax = min(dmax, tmax);
+    }
+
+    if (tmax >= tmin) return tmin;
+    return 1e30f; /* miss */
+}
+```
+<sup>Snippet A.</sup>
+
+*Snippet A* shows a basic <span class="yellow">ray vs aabb</span> intersection test you can use.<br>
+It is not an optimal one, nevertheless it will get the job done for now.
+
+We can now put this intersection test at the top of our `find_nearest` function.<br>
+And for now, we can just return `entry_t` if there was a hit.
+
+```cpp
+float VoxelTracer::find_nearest(const vec3& ro, const vec3& rd) const {
+    /* Find the ray entry point */ 
+    const float entry_t = ray_aabb(grid_min, grid_max, ro, rd);
+
+    if (entry_t == 1e30f) return 1e30f; /* miss */
+
+    /* TODO: voxel traversal */
+
+    return entry_t; /* hit */
+}
+```
+
+If we shoot a ray for each pixel on screen, and turn the output of `find_nearest` into a grayscale color.<br>
+We should get something that looks like this:
+
+<figure title="Testing our ray vs aabb intersection">
+<img class="fig" src="./assets/images/ray-vs-aabb-test.png" width="256">
+</figure>
 
 ## Traversal Concept
 
@@ -174,7 +236,7 @@ That's what we're going to find out next.
 
 ## Traversal Setup
 
-Now that we have some data to traverse, and we understand the basic concept, we can start implementing the algorithm.<br>
+Now that we have our `VoxelTracer`, and we understand the basic concept, we can start implementing the algorithm.<br>
 Let's start with 2 important variables which will <span class="yellow">remain constant</span> during traversal:
 
 <div class="h-group">
@@ -260,7 +322,7 @@ Here's what that would look like in C++:
 
 ```cpp
 /** @brief Get the sign of a float (-1 or 1) */
-inline float getsign(const float f) { return 1 - (((unsigned int&)f) >> 31) * 2; }
+inline int getsign(const float f) { return 1 - (int)(((unsigned int&)f) >> 31) * 2; }
 
 /** @brief Get the signs of a 3D vector (-1 or 1) */
 inline vec3 sign_of_dir(const vec3& v) {
@@ -367,7 +429,13 @@ To initialize it, we get the offset between the grid `pos` and the entry point,<
 add only the positive part of our `step`, and finally divide by the ray direction `rd`.
 
 ```cpp
-/* Initialize the time along the ray when each axis crosses its next cell boundary. */
+/* Compute how many voxels occupy a unit in world space */
+const vec3 voxels_per_unit = (grid_max - grid_min) * GRID_SIDE;
+
+/* Get the floating grid entry position */
+const vec3 entry_pos = ((ro + rd * (entry_t + 0.0001f)) - grid_min) * voxels_per_unit;
+
+/* Initialize the time along the ray when each axis crosses its next cell boundary */
 vec3 tmax = (pos - entry_pos + max(step, 0)) / rd;
 ```
 
@@ -382,91 +450,148 @@ This is important because later we will be updating `tmax` using our `delta`.
 
 ## Traversal
 
-*Explain the traversal algorithm, with code examples.*
-
-Now that everything is already setup for us, we get to the easiest part, the actual traversal.<br>
+Now that everything is already setup for us, we get to the easiest part, the <span class="yellow">actual traversal</span>.<br>
 As I mentioned in the *Concept* part of the article, we will simply step based on the smallest axis of `tmax`.<br>
 And after every step, we update our `pos` and `tmax`.
 
 ```cpp
-constexpr int MAX_STEPS = 64;
-
-/* Get our traversal constants */
-const vec3 step = sign_of_dir(rd);
-const vec3 delta = abs(1.0f / rd);
-
-/* IMPORTANT: Clamp the entry point inside the grid */
-vec3 pos = clamp(floor(entry_pos), 0, GRID_SIDE);
-
-/* Initialize the time along the ray when each axis crosses its next cell boundary. */
-vec3 tmax = (pos - entry_pos + max(step, 0)) / rd;
-
-/* The traversal loop */
-float t = 0;
-for (int steps = 0; steps < MAX_STEPS; ++steps) {
+int axis = 0;
+for (...) {
     /* Fetch the cell at our current position */
-    const unsigned int voxel = grid[pos.z * GRID_SIZE * GRID_SIDE + pos.y * GRID_SIDE + pos.x];
+    const int i = pos.z * GRID_SIDE * GRID_SIDE + pos.y * GRID_SIDE + pos.x;
+    const unsigned int voxel = grid[i];
 
-    /* Check if we hit a voxel which isn't 0 */ 
+    /* Check if we hit a voxel which isn't 0 */
     if (voxel) {
         /* Return the time of intersection! */
-        return entry_t + t;
+        return entry_t + (tmax[axis] - delta[axis]) / voxels_per_unit[axis];
     }
 
-    /* Step on the axis where `tmax` is the smallest */ 
+    /* Step on the axis where `tmax` is the smallest */
     if (tmax.x < tmax.y) {
         if (tmax.x < tmax.z) {
             pos.x += step.x;
             if (pos.x < 0 || pos.x >= GRID_SIDE) break;
-            t = tmax.x;
+            axis = 0;
             tmax.x += delta.x;
         } else {
             pos.z += step.z;
             if (pos.z < 0 || pos.z >= GRID_SIDE) break;
-            t = tmax.z;
+            axis = 2;
             tmax.z += delta.z;
         }
     } else {
         if (tmax.y < tmax.z) {
             pos.y += step.y;
             if (pos.y < 0 || pos.y >= GRID_SIDE) break;
-            t = tmax.y;
+            axis = 1;
             tmax.y += delta.y;
         } else {
             pos.z += step.z;
             if (pos.z < 0 || pos.z >= GRID_SIDE) break;
-            t = tmax.z;
+            axis = 2;
             tmax.z += delta.z;
         }
     }
 }
 ```
+<sup>Snippet B.</sup>
 
-In this code snippet, we also track `t` the current time in the grid.<br>
-Because when we hit something, we want to return the time of intersection with whatever we hit.
-
-*TODO: Maybe move this section below here UP?*
-
-Something else interesting is our `entry_t` and `entry_pos`, where are those coming from?<br>
-We can simply obtain those using a basic ray box intersection test.
+In *Snippet B*, we also track `axis`, the previous axis we stepped on.<br>
+Because when we hit something, we want to return the <span class="yellow">time of intersection</span> with whatever we hit.<br>
+Which is the previous `tmax` along the previously stepped `axis`.
 
 ```cpp
-float ray_box_intersect(const box& b, const ray& r) {
-    const float tx1 = (b.min.x - r.x0.x)*r.n_inv.x;
-    const float tx2 = (b.max.x - r.x0.x)*r.n_inv.x;
+entry_t + (tmax[axis] - delta[axis]) / voxels_per_unit[axis]
+```
 
-    float tmin = min(tx1, tx2);
-    float tmax = max(tx1, tx2);
+And that's it, that's the entire algorithm implemented and <span class="yellow">ready to go</span>!
 
-    const float ty1 = (b.min.y - r.x0.y)*r.n_inv.y;
-    const float ty2 = (b.max.y - r.x0.y)*r.n_inv.y;
+## All Together Now!
 
-    tmin = max(tmin, min(ty1, ty2));
-    tmax = min(tmax, max(ty1, ty2));
+Now with everything put together, the final `find_nearest` function looks like this:
 
-    if (tmax >= tmin && tmin > 0)
-        return tmin;
-    else
-        return 1e30f; /* miss */
+```cpp
+constexpr int MAX_STEPS = 128;
+
+float VoxelTracer::find_nearest(const vec3& ro, const vec3& rd) const { 
+    /* Find the ray entry point */ 
+    const float entry_t = ray_aabb(grid_min, grid_max, ro, rd);
+
+    if (entry_t == 1e30f) return 1e30f; /* miss */
+
+    /* Compute how many voxels occupy a unit in world space */
+    const vec3 voxels_per_unit = (grid_max - grid_min) * GRID_SIDE;
+
+    /* Get the floating grid entry position */
+    /* `0.0001f` is to slightly nudge the point inside the grid */
+    const vec3 entry_pos = ((ro + rd * (entry_t + 0.0001f)) - grid_min) * voxels_per_unit;
+
+    /* Get our traversal constants */
+    const vec3 step = sign_of_dir(rd);
+    const vec3 delta = fabs(1.0f / rd);
+
+    /* IMPORTANT: Safety clamp the entry point inside the grid */
+    vec3 pos = clamp(floorf(entry_pos), 0, GRID_SIDE);
+
+    /* Initialize the time along the ray when each axis crosses its next cell boundary */
+    vec3 tmax = (pos - entry_pos + fmaxf(step, 0)) / rd;
+
+    /* The traversal loop */
+    int axis = 0;
+    for (int steps = 0; steps < MAX_STEPS; ++steps) {
+        /* Fetch the cell at our current position */
+        const int i = pos.z * GRID_SIDE * GRID_SIDE + pos.y * GRID_SIDE + pos.x;
+        const unsigned int voxel = grid[i];
+
+        /* Check if we hit a voxel which isn't 0 */
+        if (voxel) {
+            /* Return the time of intersection! */
+            return entry_t + (tmax[axis] - delta[axis]) / voxels_per_unit[axis];
+        }
+
+        /* Step on the axis where `tmax` is the smallest */
+        if (tmax.x < tmax.y) {
+            if (tmax.x < tmax.z) {
+                pos.x += step.x;
+                if (pos.x < 0 || pos.x >= GRID_SIDE) break;
+                axis = 0;
+                tmax.x += delta.x;
+            } else {
+                pos.z += step.z;
+                if (pos.z < 0 || pos.z >= GRID_SIDE) break;
+                axis = 2;
+                tmax.z += delta.z;
+            }
+        } else {
+            if (tmax.y < tmax.z) {
+                pos.y += step.y;
+                if (pos.y < 0 || pos.y >= GRID_SIDE) break;
+                axis = 1;
+                tmax.y += delta.y;
+            } else {
+                pos.z += step.z;
+                if (pos.z < 0 || pos.z >= GRID_SIDE) break;
+                axis = 2;
+                tmax.z += delta.z;
+            }
+        }
+    }
+
+    return 1e30f; /* miss */
 }
 ```
+
+And when we once again shoot a ray for each pixel into the scene.<br>
+We get to finally see some <span class="yellow">voxels on screen</span>!
+
+<figure title="Voxel ray tracing">
+<img class="fig" src="./assets/images/voxel-traversal.png" width="256">
+</figure>
+
+## Wrapping Up
+<span class="yellow">Thank you</span> for reading all the way to the end, I hope you now have a better understanding of the algorithm.<br>
+And I hope you enjoyed reading this article.
+
+If you have anymore questions, or you found something incorrect in the article, let [me](https://twitter.com/mxacop) know on Twitter (X).<br>
+*Also feel free to send me pictures of your voxel traversal working! :)*
