@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg width="194.5" height="194.5" version="1.1" viewBox="0 0 194.5 194.5" xmlns="http://www.w3.org/2000/svg">
+ <g stroke-linecap="round" stroke-linejoin="round">
+  <g>
+   <g font-size="20.05px" stroke-dasharray="13.3663, 13.3663" stroke-width="3.3416">
+    <text x="3.1620638" y="23.12842" fill="#3d3a34" letter-spacing="-4px" xml:space="preserve"><tspan x="3.1620638" y="23.12842" fill="#3d3a34" font-family="'JetBrains Mono'" font-weight="800" letter-spacing="-4px" stroke-width="3.3416">0,0</tspan></text>
+    <text transform="rotate(-19.392)" x="24.338623" y="116.30575" fill="#ffffff" xml:space="preserve"><tspan x="24.338623" y="116.30575" fill="#ffffff" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">delta<tspan baseline-shift="sub" font-size="65%">y</tspan></tspan></text>
+    <text transform="rotate(-19.392)" x="4.6828022" y="174.56879" fill="#ffffff" xml:space="preserve"><tspan x="4.6828022" y="174.56879" fill="#ffffff" font-family="'JetBrains Mono'" font-weight="800" stroke-width="3.3416">delta<tspan baseline-shift="sub" font-size="65%">x</tspan></tspan></text>
+   </g>
+   <path d="m187.15 77.817 3.0598 8.2766 4.2904-6.29z" fill="#7e4d05" stroke="#7e4d05" stroke-dashoffset="21.9" stroke-width="3"/>
+  </g>
+  <g fill="none" stroke-dashoffset="21.9" stroke-width="3">
+   <path d="m144.69 97.014-4.0816-11.643-90.342 31.87 4.0816 11.643" stroke="#fff"/>
+   <path d="m65.25 125.62 4.0816 11.643 31.974-11.286-4.1065-11.634" stroke="#fff"/>
+   <path d="m0 148.26 194.5-68.456" stroke="#7e4d05"/>
+  </g>
+  <g fill="#7b3333" stroke="#fed436" stroke-dashoffset="21.9" stroke-width="3">
+   <path d="m17.25 97.25v32"/>
+   <path d="m11.879 97.25h10.742"/>
+   <path d="m65.25 171.88v10.742"/>
+   <path d="m97.25 171.88v10.742"/>
+   <path d="m11.879 129.25h10.742"/>
+   <path d="m65.25 177.25h32"/>
+  </g>
+ </g>
+</svg>
