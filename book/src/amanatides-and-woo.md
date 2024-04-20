@@ -1,5 +1,5 @@
 <div class="page-head">
-    <i>18/04/2024 ~ #ray-tracing ~ #voxels ~ #grid-traversal</i>
+    <i>20/04/2024 ~ #ray-tracing ~ #voxels ~ #grid-traversal</i>
     <h1><img src="assets/images/mushroom.png" title="RAM Stick"> Amanatides and Woo</h1>
     <p>One <span class="yellow">step</span> at a time</p>
 </div>
