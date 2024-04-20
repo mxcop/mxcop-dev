@@ -34,11 +34,10 @@ Let's setup a little `VoxelTracer` class together:
 
 ```cpp
 constexpr int GRID_SIDE = 32;
-constexpr int GRID_SIZE = GRID_SIDE * GRID_SIDE * GRID_SIDE;
 
 class VoxelTracer {
     /* Grid voxel data. */
-    unsigned int grid[GRID_SIZE];
+    unsigned int grid[GRID_SIDE * GRID_SIDE * GRID_SIDE];
 
     /* Grid minimum and maximum point in world space. (x, y, z) */
     vec3 grid_min, grid_max;
@@ -53,6 +52,8 @@ class VoxelTracer {
 
     /**
      * @brief Find the nearest intersection with the grid.
+     * @param ro Ray origin
+     * @param rd Ray direction (normalized)
      * @return `1e30f` if no intersection was found.
      */
     float find_nearest(const vec3& ro, const vec3& rd) const;
@@ -71,6 +72,8 @@ If our ray **does** intersect we will also get the time along the ray where it e
 ```cpp
 /**
  * @brief Ray vs AABB intersection test. (can be optimized further)
+ * @param ro Ray origin
+ * @param rd Ray direction (normalized)
  * @return Ray entry time, `1e30f` if no intersection was found.
  */
 float ray_aabb(const vec3& min, const vec3& max, const vec3& ro, const vec3& rd) {
